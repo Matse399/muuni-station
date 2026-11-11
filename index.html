@@ -35,7 +35,7 @@ a{color:var(--green)}
 .badge::before{content:"";width:6px;height:6px;border-radius:3px;background:var(--green)}
 .tagline{margin:10px 0 0;font-size:15px;color:var(--muted);max-width:640px}
 
-nav{position:sticky;top:0;z-index:20;background:rgba(243,241,235,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-top:14px}
+nav{position:sticky;top:0;z-index:20;background:#F3F1EB;box-shadow:0 2px 6px rgba(23,34,27,.06);border-bottom:1px solid var(--line);margin-top:14px}
 nav .wrap{display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:none}
 nav .wrap::-webkit-scrollbar{display:none}
 nav a{white-space:nowrap;text-decoration:none;color:var(--muted);font-weight:700;font-size:13px;padding:8px 13px;border-radius:999px}
@@ -120,18 +120,19 @@ h2{font-size:22px;margin:0;letter-spacing:-.4px}
   .sun{width:240px;height:240px;right:-75px;top:-50px}.sun .core{width:50px;height:50px;margin:-25px 0 0 -25px}
   .skyrow .k{font-size:11px}.skyrow .v{font-size:19px}
   .wind{grid-template-columns:120px 1fr}#compass{width:120px;height:120px}.wind .big{font-size:44px}
-  .fclist .row{grid-template-columns:52px 26px 1fr 50px 34px 30px;font-size:15px}
+  .fclist .row{grid-template-columns:1fr 28px 56px 36px 30px;font-size:15px}
 }
 /* ---------- icon cards (like the app) ---------- */
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-@media(max-width:360px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.ic{background:var(--card);border-radius:22px;padding:16px 14px;min-height:150px}
-.ic svg.i{width:26px;height:26px}
-.ic .k{font-size:14px;color:var(--muted);font-weight:600;margin-top:10px}
-.ic .v{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.15;margin-top:2px}
-.ic .v small{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:2px}
+@media(max-width:330px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ic{background:var(--card);border-radius:18px;padding:12px 11px}
+.ic .h{display:flex;align-items:flex-start;gap:6px}
+.ic svg.i{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+.ic .k{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.3}
+.ic .v{font-size:24px;font-weight:800;letter-spacing:-.8px;line-height:1.15;margin-top:6px;white-space:nowrap}
+.ic .v small{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:2px}
 .ic.old .v{color:#6D7570}
-.chip{display:inline-block;margin-top:6px;font-size:13px;font-weight:700}
+.chip{display:inline-block;margin-top:3px;font-size:11.5px;font-weight:700;line-height:1.3}
 .chip.amber{color:var(--amber)}
 .chip.grey{color:var(--muted)}
 .n{font-size:12px;color:var(--muted);margin-top:4px}
@@ -147,10 +148,10 @@ h2{font-size:22px;margin:0;letter-spacing:-.4px}
 .wstats .k{font-size:13px;color:var(--muted)}.wstats .v{font-size:22px;font-weight:800}
 
 /* forecast list */
-.fclist .row{display:grid;grid-template-columns:64px 30px 1fr 56px 40px 36px;align-items:center;gap:6px;padding:14px 0;border-bottom:1px solid var(--line);font-size:16px}
+.fclist .row{display:grid;grid-template-columns:1fr 32px 62px 40px 34px;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);font-size:16px}
 .fclist .row:last-child{border-bottom:0}
 .fclist .d{font-weight:700}
-.fclist .c{color:var(--muted);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fclist .c{color:var(--muted);font-size:13px;font-weight:500;margin-top:1px}
 .fclist .p{color:var(--blue);font-weight:600;font-size:15px;display:flex;align-items:center;gap:2px}
 .fclist .hi{font-weight:800;text-align:right}.fclist .lo{color:var(--muted);text-align:right}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -276,7 +277,7 @@ footer{color:var(--muted);font-size:13px;padding:26px 0 44px}
     <div class="card fclist" id="fc-list" style="padding:4px 18px"></div>
     <div class="two">
       <div class="card mini"><div class="top"><span class="t">UV</span><span class="pill f" data-i18n="forecast"></span></div><div class="v" id="uv-v">—</div><div class="n" id="uv-n"></div></div>
-      <div class="card mini"><div class="top"><span class="t" data-i18n="sky_k"></span><span class="pill f" data-i18n="forecast"></span></div><div class="v" id="sky-v" style="font-size:21px;line-height:1.2">—</div><div class="n" id="sky-n"></div></div>
+      <div class="card mini"><div class="top"><span class="t" data-i18n="sky_k"></span><span class="pill f" data-i18n="forecast"></span></div><div class="v" id="sky-v" style="font-size:17px;line-height:1.25">—</div><div class="n" id="sky-n"></div></div>
     </div>
     <div class="card" style="margin-top:10px">
       <div class="k2" data-i18n="fc_next24"></div>
@@ -434,7 +435,7 @@ live_h:"Right now",readings_h:"Station readings",measured:"MEASURED",measured_ol
 online:"Online",offline:"Offline",last_seen:"last seen",last_reading:"Last reading",ago:"ago",min:"min",h:"h",d:"days",
 noconn:"Could not reach the data server. Check your internet.",
 air:"Air temp",hum:"Humidity",dew:"Dew point",pres:"Pressure",wind:"Wind",gust_k:"Gust",avg30:"Avg 30 s",rain_today:"Rain today",rain1h:"Last hour",
-soilm:"Soil moisture",soilt:"Soil temp",ph:"Soil pH",ec:"Soil EC",npk:"N · P · K",notsoil:"Not in soil",check:"Check",unrel:"unreliable",
+soilm:"Soil moisture",soilt:"Soil temp",ph:"Soil pH",ec:"Soil EC",npk:"N · P · K",notsoil:"Not in soil",poor:"Poor contact",check:"Check",unrel:"unreliable",
 fc_h:"Next 7 days",fc_sub:"From the Open-Meteo weather model, not from our station.",fc_next24:"Rain chance, next 24 hours",today:"Today",sky_k:"Sky",cloud:"Cloud",
 uv0:"Low",uv1:"Moderate",uv2:"High",uv3:"Very high",uv4:"Extreme",
 w_clear:"Clear",w_partly:"Partly cloudy",w_cloudy:"Cloudy",w_fog:"Fog",w_drizzle:"Drizzle",w_rain:"Rain",w_storm:"Thunderstorm",
@@ -472,7 +473,7 @@ live_h:"Pakali pano",readings_h:"Miyeso ya siteshoni",measured:"ZOYEZEDWA",measu
 online:"Ikugwira ntchito",offline:"Sikugwira ntchito",last_seen:"yomaliza",last_reading:"Muyeso womaliza",ago:"zapitazo",min:"mphindi",h:"maola",d:"masiku",
 noconn:"Sitinathe kufikira seva ya deta. Onani intaneti yanu.",
 air:"Kutentha",hum:"Chinyezi",dew:"Mame",pres:"Mphamvu ya mpweya",wind:"Mphepo",gust_k:"Mphepo yamphamvu",avg30:"Avereji",rain_today:"Mvula lero",rain1h:"Ola lapitali",
-soilm:"Chinyezi cha nthaka",soilt:"Kutentha kwa nthaka",ph:"pH ya nthaka",ec:"EC ya nthaka",npk:"N · P · K",notsoil:"Sichili m'nthaka",check:"Onani",unrel:"sizodalirika",
+soilm:"Chinyezi cha nthaka",soilt:"Kutentha kwa nthaka",ph:"pH ya nthaka",ec:"EC ya nthaka",npk:"N · P · K",notsoil:"Sichili m'nthaka",poor:"Sichikhudza bwino nthaka",check:"Onani",unrel:"sizodalirika",
 fc_h:"Masiku 7 akubwerawa",fc_sub:"Kuchokera ku Open-Meteo, osati ku siteshoni yathu.",fc_next24:"Mwayi wa mvula, maola 24",today:"Lero",sky_k:"Thambo",cloud:"Mitambo",
 uv0:"Pang'ono",uv1:"Pakatikati",uv2:"Wamphamvu",uv3:"Wamphamvu kwambiri",uv4:"Woopsa",
 w_clear:"Kuyera",w_partly:"Mitambo pang'ono",w_cloudy:"Mitambo",w_fog:"Nkhungu",w_drizzle:"Mvula yowaza",w_rain:"Mvula",w_storm:"Mabingu",
@@ -608,7 +609,7 @@ function render(){
 
 function setPill(el, stale){ el.className = "pill " + (stale ? "old" : "m"); el.textContent = stale ? t("measured_old") : t("measured"); }
 function ic(iconKey, k, v, unit, extra, stale){
-  return `<div class="ic${stale?" old":""}">${icon(iconKey)}<div class="k">${k}</div><div class="v">${v}${unit && v!=="—"?`<small>${unit}</small>`:""}</div>${extra||""}</div>`;
+  return `<div class="ic${stale?" old":""}"><div class="h">${icon(iconKey)}<div class="k">${k}</div></div><div class="v">${v}${unit && v!=="—"?`<small>${unit}</small>`:""}</div>${extra||""}</div>`;
 }
 
 function renderLive(){
@@ -634,19 +635,21 @@ function renderLive(){
   drawSky(stale, cur, WS, R1);
 
   // icon cards
-  const sm = s?num(s.field1):null, ph = s?num(s.field4):null, out = sm !== null && sm < 5;
+  const sm = s?num(s.field1):null, ph = s?num(s.field4):null, ecv = s?num(s.field3):null, out = sm !== null && sm < 5;
+  const poor = !out && sm !== null && ecv === 0;   // EC of 0 with moisture present = probe not touching soil properly
   const rdToday = rainByDay()[todayKey()];
-  let smChip = ""; if (out) smChip = `<span class="chip amber">⚠ ${t("notsoil")}</span>`; else if (sm !== null && sm < 10) smChip = `<span class="chip amber">⚠ ${t("check")}</span>`;
-  const phBad = out || (ph !== null && (ph < 3.5 || ph > 9.5));
+  let smChip = ""; if (out) smChip = `<span class="chip amber">⚠ ${t("notsoil")}</span>`; else if (poor) smChip = `<span class="chip amber">⚠ ${t("poor")}</span>`; else if (sm !== null && sm < 10) smChip = `<span class="chip amber">⚠ ${t("check")}</span>`;
+  const bad = out || poor, phBad = ph !== null && (ph < 3.5 || ph > 9.5);
+  const badChip = poor ? `<span class="chip amber">${t("poor")}</span>` : "";
   $("live-grid").innerHTML =
     ic("drop", t("rain_today"), S.wSeries.length ? fmt(rdToday||0) : "—", "mm", "", stale) +
     ic("wind", t("wind"), fmt(WS), "m/s", `<div class="n">${WD!==null?compass(WD):"—"}</div>`, stale) +
     ic("gauge", t("pres"), fmt(P,0), "hPa", "", stale) +
     ic("dropHalf", t("soilm"), out ? "—" : fmt(sm,0), "%", smChip, sStale) +
-    ic("flask", t("ph"), fmt(ph), "", phBad ? `<span class="chip grey">${t("unrel")}</span>` : "", sStale) +
+    ic("flask", t("ph"), bad ? "—" : fmt(ph), "", bad ? badChip : (phBad ? `<span class="chip grey">${t("unrel")}</span>` : ""), sStale) +
     ic("therm", t("soilt"), fmt(s?num(s.field2):null), "°C", "", sStale) +
-    ic("bolt", t("ec"), out ? "—" : fmt(s?num(s.field3):null,0), "µS/cm", "", sStale) +
-    ic("leaf", t("npk"), out ? "—" : [5,6,7].map(i=>fmt(s?num(s["field"+i]):null,0)).join("/"), "", `<div class="n">mg/kg</div>`, sStale).replace('class="v"','class="v" style="font-size:19px;white-space:nowrap;letter-spacing:-.5px"') +
+    ic("bolt", t("ec"), bad ? "—" : fmt(ecv,0), "µS/cm", badChip, sStale) +
+    ic("leaf", t("npk"), bad ? "—" : [5,6,7].map(i=>fmt(s?num(s["field"+i]):null,0)).join("/"), "", bad ? badChip : `<div class="n">mg/kg</div>`, sStale).replace('class="v"','class="v" style="font-size:17px;letter-spacing:-.5px"') +
     ic("therm", t("air"), fmt(T0), "°C", "", stale);
 
   // wind card
@@ -766,7 +769,7 @@ function renderForecast(){
   const f = S.fc; if (!f || !f.daily){ $("fc-list").innerHTML = `<div class="n" style="padding:16px 0">—</div>`; return; }
   $("fc-list").innerHTML = f.daily.time.map((d,i) => {
     const k = wxKind(f.daily.weather_code[i]); const wd = new Date(d+"T12:00:00Z").getUTCDay();
-    return `<div class="row"><div class="d">${i===0?t("today"):(LANG==="ny"?DAYS.ny[wd].slice(0,6):DAYS.en[wd])}</div><div>${wxIcon(k)}</div><div class="c">${t("w_"+k)}</div>
+    return `<div class="row"><div><div class="d">${i===0?t("today"):(LANG==="ny"?DAYS.ny[wd]:DAYS.en[wd])}</div><div class="c">${t("w_"+k)}</div></div><div>${wxIcon(k)}</div>
       <div class="p"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>${f.daily.precipitation_probability_max[i] ?? 0}%</div>
       <div class="hi">${Math.round(f.daily.temperature_2m_max[i])}°</div><div class="lo">${Math.round(f.daily.temperature_2m_min[i])}°</div></div>`;
   }).join("");
@@ -776,8 +779,8 @@ function renderForecast(){
   $("uv-v").innerHTML = uv===null ? "—" : `${wxIcon("clear",30)}${Math.round(uv)}`;
   $("uv-n").textContent = lvl===null ? "" : t("uv"+lvl) + (f.daily.uv_index_max ? ` · max ${Math.round(f.daily.uv_index_max[0])}` : "");
   const cur = f.current;
-  $("sky-v").innerHTML = cur ? `${wxIcon(wxKind(cur.weather_code),30)}${t("w_"+wxKind(cur.weather_code))}` : "—";
-  $("sky-n").textContent = cur ? `${t("cloud")} ${cur.cloud_cover}%` : "";
+  $("sky-v").textContent = cur ? t("w_"+wxKind(cur.weather_code)) : "—";
+  $("sky-n").innerHTML = cur ? `<span style="display:inline-flex;align-items:center;gap:6px">${wxIcon(wxKind(cur.weather_code),22)}${t("cloud")} ${cur.cloud_cover}%</span>` : "";
   const i0 = Math.max(0,i), probs = f.hourly.precipitation_probability.slice(i0, i0+24), hrs = f.hourly.time.slice(i0, i0+24);
   $("fc-hours").innerHTML = barChart(probs.map((v,j)=>({label: j%4===0 ? hrs[j].slice(11,16) : "", v: v ?? 0})), 100, "#1D5FA8");
 }
