@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muuni Open Data</title>
+<meta name="description" content="Live, open weather and soil data from the Muuni low-cost station in Malawi. Free to download and use.">
+<meta property="og:title" content="Muuni Open Weather & Soil Station">
+<meta property="og:description" content="Live open weather and soil data from Malawi. Open hardware, open source, open data.">
+<meta name="theme-color" content="#1E6B45">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F1EB; --card:#FFFFFF; --ink:#17221B; --muted:#5E6862; --line:#E4E0D5; --chip:#ECEBE6;
+  --green:#1E6B45; --green-soft:#E3EFE6; --blue:#1D5FA8; --blue-soft:#E3ECF9;
+  --amber:#8A4F00; --amber-soft:#FBEFD9; --red:#A3261B; --red-soft:#F8E1DE;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:var(--green)}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px}
+
+/* top bar like the app */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 0 6px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:26px;letter-spacing:-.6px}
+.logo{width:44px;height:44px;border-radius:12px;background:var(--green);display:flex;align-items:center;justify-content:center}
+.lang{display:flex;background:var(--green);border-radius:999px;padding:4px}
+.lang button{border:0;background:transparent;color:#fff;font:inherit;font-weight:800;font-size:14px;padding:7px 14px;border-radius:999px;cursor:pointer}
+.lang button.on{background:#fff;color:var(--green)}
+.place{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:15px;margin:4px 0 10px}
+.badges{display:flex;flex-wrap:wrap;gap:4px 14px}
+.badge{color:var(--green);font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px}
+.badge::before{content:"";width:6px;height:6px;border-radius:3px;background:var(--green)}
+.tagline{margin:10px 0 0;font-size:15px;color:var(--muted);max-width:640px}
+
+nav{position:sticky;top:0;z-index:20;background:rgba(243,241,235,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin-top:14px}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:none}
+nav .wrap::-webkit-scrollbar{display:none}
+nav a{white-space:nowrap;text-decoration:none;color:var(--muted);font-weight:700;font-size:13px;padding:8px 13px;border-radius:999px}
+nav a:hover,nav a:focus{background:var(--green-soft);color:var(--green)}
+
+section{padding:22px 0 4px;scroll-margin-top:60px}
+.sh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+h2{font-size:22px;margin:0;letter-spacing:-.4px}
+.sub{color:var(--muted);font-size:14px;margin:-6px 0 12px}
+
+.pill{font-size:11px;font-weight:800;letter-spacing:1px;white-space:nowrap;background:none!important;padding:0}
+.pill.m{background:var(--green-soft);color:var(--green)}
+.pill.old{background:var(--chip);color:var(--muted)}
+.pill.f{background:var(--blue-soft);color:var(--blue)}
+.statuspill{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:12px}
+.statuspill.ok{color:var(--green)}
+.dot{width:9px;height:9px;border-radius:5px;background:#7A817D}.statuspill.ok .dot{background:#22A05A}
+
+.banner{border-radius:18px;padding:14px 16px;font-size:14px;display:flex;gap:12px;align-items:flex-start}
+.banner.amber{background:var(--amber-soft);color:#5E3700}
+.banner.grey{background:var(--chip);color:var(--ink)}
+.banner b{display:block}
+
+/* ---------- animated sky card ---------- */
+.sky{position:relative;border-radius:28px;overflow:hidden;color:#fff;min-height:290px;padding:22px 22px 70px;
+  background:linear-gradient(180deg,#2C67B0 0%,#5F97D3 70%,#8DB8E3 100%);isolation:isolate}
+.sky.night{background:linear-gradient(180deg,#0B1830 0%,#1C3360 70%,#2B4877 100%)}
+.sky.old{background:linear-gradient(180deg,#2F4E78 0%,#4E6E96 70%,#6886AA 100%)}
+.sky.old .skytext{color:#D9E1EA}
+.sky .layer{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.sun{position:absolute;right:-95px;top:-75px;width:300px;height:300px;pointer-events:none}
+.sun .halo{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,253,240,.95) 0%,rgba(255,246,210,.75) 9%,rgba(255,236,180,.42) 18%,rgba(255,228,160,.18) 32%,rgba(255,220,150,.06) 48%,rgba(255,220,150,0) 66%);
+  animation:glow 6s ease-in-out infinite alternate}
+.sun .rays{position:absolute;inset:-10%;border-radius:50%;opacity:.22;filter:blur(3px);
+  background:repeating-conic-gradient(from 0deg,rgba(255,250,225,.9) 0deg 2deg,rgba(255,250,225,0) 2deg 11deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,rgba(0,0,0,.5) 25%,transparent 55%);mask:radial-gradient(circle,#000 8%,rgba(0,0,0,.5) 25%,transparent 55%);
+  animation:spin 140s linear infinite}
+.sun .core{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;
+  background:radial-gradient(circle,#FFFFFF 0%,#FFFEF6 55%,#FFF4C9 85%,#FFE7A0 100%);
+  box-shadow:0 0 18px 6px rgba(255,252,235,.95),0 0 46px 18px rgba(255,236,170,.55),0 0 110px 50px rgba(255,220,140,.22)}
+.flare{position:absolute;border-radius:50%;pointer-events:none;mix-blend-mode:screen}
+.sky.old .sun{opacity:.55;filter:saturate(.6)}
+.sky.old .flare{display:none}
+@keyframes glow{from{transform:scale(.97);opacity:.92}to{transform:scale(1.03);opacity:1}}
+.moon{position:absolute;right:40px;top:70px;width:64px;height:64px;border-radius:50%;box-shadow:-14px 6px 0 0 #EDE6CF;transform:rotate(-20deg)}
+.star{position:absolute;width:2px;height:2px;border-radius:1px;background:#fff;opacity:.7;animation:tw 3s ease-in-out infinite}
+.track{position:absolute;left:0;width:100%;animation:drift linear infinite;will-change:transform}
+.cloud{position:absolute;left:0;top:0}
+.cloud .cl{position:absolute;border-radius:50%}
+.cl.base{background:radial-gradient(closest-side,rgba(170,186,208,.95),rgba(170,186,208,.65) 55%,rgba(170,186,208,0))}
+.cl.top{background:radial-gradient(closest-side,#fff,rgba(255,255,255,.85) 45%,rgba(255,255,255,0))}
+.sky.old .cloud,.sky.night .cloud{opacity:.55}
+.sky .skytop,.sky .bigt,.sky .cond,.skyrow{text-shadow:0 1px 8px rgba(20,45,80,.35)}
+.drop{position:absolute;top:-20px;width:2px;height:14px;border-radius:1px;background:rgba(220,235,255,.75);animation:fall linear infinite}
+.crops{position:absolute;left:0;bottom:0;width:100%;height:64px;display:block}
+.flyer{position:absolute;left:0;top:0;will-change:transform;pointer-events:none}
+.plane-trail{position:absolute;top:50%;right:100%;height:2px;margin-top:-1px;border-radius:2px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.75));filter:blur(.5px)}
+.navlight{position:absolute;width:3px;height:3px;border-radius:2px;animation:blink 1.3s steps(1) infinite}
+@keyframes blink{0%{opacity:1}12%{opacity:0}}
+.crops .plant{transform-origin:50% 100%;animation:sway ease-in-out infinite alternate}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{from{transform:translateX(calc(-100% + -320px))}to{transform:translateX(100%)}}
+@keyframes fall{to{transform:translateY(340px)}}
+@keyframes sway{from{transform:rotate(-2deg)}to{transform:rotate(2.5deg)}}
+@keyframes tw{50%{opacity:.15}}
+@keyframes bob{from{transform:translateY(-2px)}to{transform:translateY(3px)}}
+@media (prefers-reduced-motion:reduce){.sun .rays,.sun .halo,.track,.drop,.crops .plant,.star{animation:none!important}}
+
+.skytop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.skytext{font-size:17px;font-weight:700}
+.sky .pill.m{color:#fff}
+.sky .pill.old{color:#E8EDF3}
+.bigt{font-size:84px;font-weight:800;letter-spacing:-4px;line-height:1;margin:14px 0 4px}
+.cond{font-size:17px;opacity:.95}
+.skyrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;border-top:1px solid rgba(255,255,255,.3);margin-top:18px;padding-top:12px;position:relative;z-index:2}
+.skyrow .k{color:rgba(255,255,255,.85);font-size:13px;font-weight:600}
+.skyrow .v{font-size:22px;font-weight:800;letter-spacing:-.5px}
+
+@media(max-width:370px){
+  .bigt{font-size:66px;letter-spacing:-3px}
+  .sun{width:240px;height:240px;right:-75px;top:-50px}.sun .core{width:50px;height:50px;margin:-25px 0 0 -25px}
+  .skyrow .k{font-size:11px}.skyrow .v{font-size:19px}
+  .wind{grid-template-columns:120px 1fr}#compass{width:120px;height:120px}.wind .big{font-size:44px}
+  .fclist .row{grid-template-columns:52px 26px 1fr 50px 34px 30px;font-size:15px}
+}
+/* ---------- icon cards (like the app) ---------- */
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:360px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ic{background:var(--card);border-radius:22px;padding:16px 14px;min-height:150px}
+.ic svg.i{width:26px;height:26px}
+.ic .k{font-size:14px;color:var(--muted);font-weight:600;margin-top:10px}
+.ic .v{font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.15;margin-top:2px}
+.ic .v small{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:2px}
+.ic.old .v{color:#6D7570}
+.chip{display:inline-block;margin-top:6px;font-size:13px;font-weight:700}
+.chip.amber{color:var(--amber)}
+.chip.grey{color:var(--muted)}
+.n{font-size:12px;color:var(--muted);margin-top:4px}
+
+.card{background:var(--card);border-radius:24px;padding:18px}
+.k2{font-size:13px;color:var(--muted);font-weight:700}
+
+/* wind card */
+.wind{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center}
+.wind .big{font-size:56px;font-weight:800;letter-spacing:-2px;line-height:1}
+.wind .big small{font-size:18px;color:var(--muted);font-weight:600;letter-spacing:0}
+.wstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+.wstats .k{font-size:13px;color:var(--muted)}.wstats .v{font-size:22px;font-weight:800}
+
+/* forecast list */
+.fclist .row{display:grid;grid-template-columns:64px 30px 1fr 56px 40px 36px;align-items:center;gap:6px;padding:14px 0;border-bottom:1px solid var(--line);font-size:16px}
+.fclist .row:last-child{border-bottom:0}
+.fclist .d{font-weight:700}
+.fclist .c{color:var(--muted);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fclist .p{color:var(--blue);font-weight:600;font-size:15px;display:flex;align-items:center;gap:2px}
+.fclist .hi{font-weight:800;text-align:right}.fclist .lo{color:var(--muted);text-align:right}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.mini .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.mini .t{font-size:18px;font-weight:800}
+.mini .v{font-size:34px;font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:8px;margin-top:8px}
+.mini .n{font-size:15px}
+
+/* advice */
+.adv .item{display:grid;grid-template-columns:30px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.adv .item:last-child{border-bottom:0}
+.adv .ib{display:flex;justify-content:center;padding-top:2px}
+.adv .cat{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:800;letter-spacing:1px;color:var(--muted)}
+.adv .ttl{font-size:18px;font-weight:800;line-height:1.3;margin-top:4px}
+.adv .ttl.good{color:var(--green)}.adv .ttl.caution{color:var(--amber)}.adv .ttl.no{color:var(--red)}
+.adv ul{margin:6px 0 0;padding-left:18px;font-size:14px;color:var(--muted)}
+
+.seg{display:inline-flex;background:var(--card);border-radius:999px;padding:3px;border:1px solid var(--line)}
+.seg button{border:0;background:transparent;font:inherit;font-size:13px;font-weight:700;padding:6px 14px;border-radius:999px;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--green);color:#fff}
+.charts{display:grid;gap:10px}
+@media(min-width:640px){.charts{grid-template-columns:1fr 1fr}}
+svg.chart{width:100%;height:auto;display:block;margin-top:6px}
+.chart text{font-size:10px;fill:var(--muted);font-family:inherit}
+
+form.dl{display:grid;gap:10px}
+@media(min-width:640px){form.dl{grid-template-columns:repeat(4,1fr)}}
+label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}
+select,input{width:100%;font:inherit;font-size:15px;padding:11px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:800;font-size:15px;padding:13px 22px;text-decoration:none;cursor:pointer}
+.btn.ghost{background:var(--card);color:var(--green);border:1px solid var(--line)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all;background:#F0EEE7;border-radius:12px;padding:10px;display:block;margin-top:6px}
+h3{margin:20px 0 8px;font-size:17px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card)}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted)}
+.tablewrap{overflow-x:auto;border-radius:18px;background:var(--card)}
+.lic{display:grid;gap:10px}
+@media(min-width:640px){.lic{grid-template-columns:repeat(3,1fr)}}
+.lic .name{font-size:18px;font-weight:800;margin:4px 0}
+footer{color:var(--muted);font-size:13px;padding:26px 0 44px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="cf0" x="-50%" y="-50%" width="200%" height="200%"><feTurbulence type="fractalNoise" baseFrequency="0.017" numOctaves="5" seed="3"/><feDisplacementMap in="SourceGraphic" scale="75" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="1"/></filter>
+  <filter id="cf1" x="-50%" y="-50%" width="200%" height="200%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" seed="11"/><feDisplacementMap in="SourceGraphic" scale="65" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="1"/></filter>
+  <filter id="cf2" x="-50%" y="-50%" width="200%" height="200%"><feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="5" seed="27"/><feDisplacementMap in="SourceGraphic" scale="85" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="1.2"/></filter>
+</svg>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="#F2C14E"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></div>
+      Muuni
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button id="lang-en" class="on" onclick="setLang('en')">EN</button>
+      <button id="lang-ny" onclick="setLang('ny')">CH</button>
+    </div>
+  </div>
+  <div class="place"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="place"></span></div>
+  <p class="tagline" data-i18n="tagline"></p>
+</div>
+
+<nav><div class="wrap">
+  <a href="#live" data-i18n="nav_live"></a>
+  <a href="#forecast" data-i18n="nav_fc"></a>
+  <a href="#advice" data-i18n="nav_adv"></a>
+  <a href="#rain" data-i18n="nav_rain"></a>
+  <a href="#charts" data-i18n="nav_charts"></a>
+  <a href="#download" data-i18n="nav_dl"></a>
+  <a href="#health" data-i18n="nav_health"></a>
+  <a href="#open" data-i18n="nav_open"></a>
+  <a href="#about" data-i18n="nav_about"></a>
+</div></nav>
+
+<main class="wrap">
+
+
+  <!-- LIVE -->
+  <section id="live">
+    <div class="sh"><h2 data-i18n="live_h"></h2><span id="live-pill" class="pill m" data-i18n="measured"></span></div>
+    <div id="status" class="statuspill"><span class="dot"></span><span id="st-text" data-i18n="loading"></span></div>
+
+    <div id="sky" class="sky">
+      <div class="layer" id="sky-layer"></div>
+      <div class="layer" id="sky-fly"></div>
+      <div class="skytop"><div class="skytext" id="sky-when">—</div><span class="pill m" id="sky-pill" data-i18n="measured"></span></div>
+      <div class="bigt" id="sky-temp">—</div>
+      <div class="cond" id="sky-cond"></div>
+      <div class="skyrow">
+        <div><div class="k" data-i18n="hum"></div><div class="v" id="sk-h">—</div></div>
+        <div><div class="k" data-i18n="dew"></div><div class="v" id="sk-d">—</div></div>
+        <div><div class="k" data-i18n="pres"></div><div class="v" id="sk-p">—</div></div>
+        <div><div class="k" data-i18n="wind"></div><div class="v" id="sk-w">—</div></div>
+      </div>
+      <svg class="crops" id="crops" viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden="true"></svg>
+    </div>
+
+    <div class="sh" style="margin-top:22px"><h2 style="font-size:19px" data-i18n="readings_h"></h2><span id="rd-pill" class="pill m" data-i18n="measured"></span></div>
+    <div class="grid3" id="live-grid"></div>
+
+    <div class="card" style="margin-top:10px">
+      <div class="sh" style="margin-bottom:6px"><div style="font-size:18px;font-weight:800" data-i18n="wind"></div><span id="wind-pill" class="pill m" data-i18n="measured"></span></div>
+      <div class="wind">
+        <svg id="compass" viewBox="0 0 150 150" width="150" height="150" aria-hidden="true"></svg>
+        <div><div class="big" id="w-big">—</div><div id="w-dir" style="color:var(--green);font-weight:700;margin-top:6px"></div></div>
+      </div>
+      <div class="wstats">
+        <div><div class="k" data-i18n="avg30"></div><div class="v" id="w-avg">—</div></div>
+        <div><div class="k" data-i18n="gust_k"></div><div class="v" id="w-gust">—</div></div>
+        <div><div class="k">Beaufort</div><div class="v" id="w-bf">—</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORECAST -->
+  <section id="forecast">
+    <div class="sh"><h2 data-i18n="fc_h"></h2><span class="pill f" data-i18n="forecast"></span></div>
+    <p class="sub" data-i18n="fc_sub"></p>
+    <div class="card fclist" id="fc-list" style="padding:4px 18px"></div>
+    <div class="two">
+      <div class="card mini"><div class="top"><span class="t">UV</span><span class="pill f" data-i18n="forecast"></span></div><div class="v" id="uv-v">—</div><div class="n" id="uv-n"></div></div>
+      <div class="card mini"><div class="top"><span class="t" data-i18n="sky_k"></span><span class="pill f" data-i18n="forecast"></span></div><div class="v" id="sky-v" style="font-size:21px;line-height:1.2">—</div><div class="n" id="sky-n"></div></div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="k2" data-i18n="fc_next24"></div>
+      <div id="fc-hours"></div>
+    </div>
+  </section>
+
+  <!-- ADVICE -->
+  <section id="advice">
+    <div class="sh"><h2 data-i18n="adv_h"></h2></div>
+    <p class="sub" data-i18n="adv_sub"></p>
+    <div class="card adv" style="padding:4px 18px">
+      <div class="item">
+        <div class="ib"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1D5FA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4v3H9zM8 6h6l1 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9z"/><path d="M11 12v5M8.5 14.5h5M17 5c1 1 2 2.2 2 3.2a1.6 1.6 0 1 1-3.2 0c0-1 .8-2.2 1.2-3.2z"/></svg></div>
+        <div><div class="cat"><span data-i18n="spray_h"></span><span class="pill" id="spray-src"></span></div><div class="ttl" id="spray">…</div><ul id="spray-r"></ul></div>
+      </div>
+      <div class="item">
+        <div class="ib"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1E6B45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2.5-5-6-5 0 3 2.5 5 6 5zM5 21h14"/></svg></div>
+        <div><div class="cat"><span data-i18n="plant_h"></span></div><div class="ttl" id="plant">…</div><ul id="plant-r"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RAIN -->
+  <section id="rain">
+    <div class="sh"><h2 data-i18n="rain_h"></h2><span id="rain-pill" class="pill m" data-i18n="measured"></span></div>
+    <div class="grid3" id="rain-grid"></div>
+    <div class="banner grey" style="margin-top:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E6B45" stroke-width="2" stroke-linecap="round"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>
+      <div><b data-i18n="cmp_h"></b><span id="cmp"></span></div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="k2" data-i18n="rain_daily"></div>
+      <div id="rain-bars"></div>
+    </div>
+  </section>
+
+  <!-- CHARTS -->
+  <section id="charts">
+    <div class="sh"><h2 data-i18n="charts_h"></h2>
+      <div class="seg"><button id="r24" class="on" onclick="setRange(1)">24 h</button><button id="r7" onclick="setRange(7)" data-i18n="d7"></button></div></div>
+    <div class="charts" id="chart-grid"></div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section id="download">
+    <div class="sh"><h2 data-i18n="dl_h"></h2><span class="pill m" data-i18n="measured"></span></div>
+    <p class="sub" data-i18n="dl_sub"></p>
+    <div class="card">
+      <form class="dl" onsubmit="return false">
+        <div><label for="dl-ch" data-i18n="dl_ch"></label>
+          <select id="dl-ch"><option value="weather" data-i18n="ch_w"></option><option value="soil" data-i18n="ch_s"></option></select></div>
+        <div><label for="dl-from" data-i18n="dl_from"></label><input id="dl-from" type="date"></div>
+        <div><label for="dl-to" data-i18n="dl_to"></label><input id="dl-to" type="date"></div>
+        <div><label for="dl-res" data-i18n="dl_res"></label>
+          <select id="dl-res">
+            <option value="" data-i18n="res_raw"></option>
+            <option value="10" data-i18n="res_10"></option>
+            <option value="60" selected data-i18n="res_60"></option>
+            <option value="daily" data-i18n="res_d"></option>
+          </select></div>
+      </form>
+      <div class="btns">
+        <a class="btn" id="dl-csv" href="#" onclick="downloadData(event,'csv')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-i18n="dl_csv"></span></a>
+        <a class="btn" id="dl-xlsx" href="#" onclick="downloadData(event,'xlsx')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-i18n="dl_xlsx"></span></a>
+        <a class="btn ghost" id="dl-json" href="#" target="_blank" rel="noopener" data-i18n="dl_json"></a>
+      </div>
+      <p class="n" id="dl-msg" style="font-weight:700;color:var(--green)"></p>
+      <p class="n" data-i18n="dl_limit"></p>
+    </div>
+
+    <h3 data-i18n="api_h"></h3>
+    <div class="card">
+      <div class="k2" data-i18n="api_last"></div><span class="code" id="api1"></span>
+      <div class="k2" style="margin-top:12px" data-i18n="api_soil"></div><span class="code" id="api2"></span>
+      <p class="n" data-i18n="api_note"></p>
+    </div>
+
+    <h3 data-i18n="dict_h"></h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th data-i18n="t_ch"></th><th data-i18n="t_name"></th><th data-i18n="t_unit"></th><th data-i18n="t_sensor"></th></tr></thead>
+      <tbody id="dict"></tbody>
+    </table></div>
+
+    <h3 data-i18n="dep_h"></h3>
+    <div class="tablewrap"><table><thead><tr><th data-i18n="t_site"></th><th data-i18n="t_from"></th><th data-i18n="t_to"></th></tr></thead><tbody id="deps"></tbody></table></div>
+
+    <h3 data-i18n="cite_h"></h3>
+    <div class="card"><span class="code" id="cite" style="margin-top:0"></span></div>
+  </section>
+
+  <!-- HEALTH -->
+  <section id="health">
+    <div class="sh"><h2 data-i18n="health_h"></h2></div>
+    <p class="sub" data-i18n="health_sub"></p>
+    <div class="grid3" id="health-grid"></div>
+  </section>
+
+  <!-- LICENCES -->
+  <section id="open">
+    <div class="sh"><h2 data-i18n="open_h"></h2></div>
+    <div class="lic">
+      <div class="card"><div class="k2" data-i18n="l_hw"></div><div class="name">CERN-OHL-S v2</div><div class="n" data-i18n="l_hw_n"></div></div>
+      <div class="card"><div class="k2" data-i18n="l_sw"></div><div class="name">GPL-3.0</div><div class="n" data-i18n="l_sw_n"></div></div>
+      <div class="card"><div class="k2" data-i18n="l_data"></div><div class="name">CC BY 4.0</div><div class="n" data-i18n="l_data_n"></div></div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="k2" data-i18n="contrib_h"></div>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:15px">
+        <li data-i18n="c1"></li><li data-i18n="c2"></li><li data-i18n="c3"></li><li data-i18n="c4"></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="sh"><h2 data-i18n="about_h"></h2></div>
+    <div class="card">
+      <p style="margin:0 0 10px" data-i18n="about_1"></p>
+      <p style="margin:0 0 10px" data-i18n="about_2"></p>
+      <p style="margin:0" data-i18n="about_3"></p>
+      <p class="n" style="margin-top:12px"><span data-i18n="by"></span> <span id="author"></span> · LUANAR, Malawi <span id="contact-wrap"></span></p>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span data-i18n="foot"></span></div></footer>
+
+<script>
+/* ===================== EDIT THESE SETTINGS ===================== */
+const CFG = {
+  author: "Martin Chirwa",
+  contactEmail: "",                         // e.g. "you@example.com" (leave empty to hide)
+  place: { en: "Sunbird Nkopola Lodge, Mangochi · Innovation show (live demo)", ny: "Sunbird Nkopola Lodge, Mangochi · Chiwonetsero cha zatsopano" },
+  lat: -14.33, lon: 35.16,                  // forecast location: Sunbird Nkopola Lodge (approx.) — replace with exact GPS from Google Maps
+  exhibitionMode: true,                     // set false when back at a real field site
+  seasonStart: "2026-11-01",                // rain season total starts here
+  deployments: [
+    { en: "LUANAR Bunda Campus, Lilongwe", ny: "LUANAR Bunda Campus, Lilongwe", from: "2026-09-29", to: "2026-11-09" },
+    { en: "Sunbird Nkopola Lodge, Mangochi (innovation show demo)", ny: "Sunbird Nkopola Lodge, Mangochi (chiwonetsero)", from: "2026-11-10", to: "" }
+  ],
+  weather: { id: 3514728, key: "TOX1AKJG9ONCAUQM" },   // READ keys only. Never put write keys here.
+  soil:    { id: 3514732, key: "5UX64Z012ZF2EUEM" },
+  staleMinutes: 30,
+  tz: "Africa/Blantyre"
+};
+/* =============================================================== */
+
+const T = {
+en:{b_hw:"Open Hardware",b_sw:"Open Source",b_data:"Open Data",
+tagline:"Live weather and soil data from a low-cost station serving many smallholder farmers. Free to view, download and use.",
+nav_live:"Live",nav_fc:"Forecast",nav_adv:"Farm advice",nav_rain:"Rain",nav_charts:"Charts",nav_dl:"Download",nav_health:"Station health",nav_open:"Licences",nav_about:"About",
+ex_t:"Exhibition mode",ex_b:"The station is a live demonstration at a show. Readings may not represent local field weather.",
+live_h:"Right now",readings_h:"Station readings",measured:"MEASURED",measured_old:"MEASURED · OLD",forecast:"FORECAST",loading:"Loading…",
+online:"Online",offline:"Offline",last_seen:"last seen",last_reading:"Last reading",ago:"ago",min:"min",h:"h",d:"days",
+noconn:"Could not reach the data server. Check your internet.",
+air:"Air temp",hum:"Humidity",dew:"Dew point",pres:"Pressure",wind:"Wind",gust_k:"Gust",avg30:"Avg 30 s",rain_today:"Rain today",rain1h:"Last hour",
+soilm:"Soil moisture",soilt:"Soil temp",ph:"Soil pH",ec:"Soil EC",npk:"N · P · K",notsoil:"Not in soil",check:"Check",unrel:"unreliable",
+fc_h:"Next 7 days",fc_sub:"From the Open-Meteo weather model, not from our station.",fc_next24:"Rain chance, next 24 hours",today:"Today",sky_k:"Sky",cloud:"Cloud",
+uv0:"Low",uv1:"Moderate",uv2:"High",uv3:"Very high",uv4:"Extreme",
+w_clear:"Clear",w_partly:"Partly cloudy",w_cloudy:"Cloudy",w_fog:"Fog",w_drizzle:"Drizzle",w_rain:"Rain",w_storm:"Thunderstorm",
+adv_h:"What to do today",adv_sub:"Simple guidance from measured and forecast data. Always check your field and your extension officer's advice.",
+spray_h:"SPRAYING",plant_h:"PLANTING",
+s_good:"Good time to spray",s_caution:"Spray with care",s_no:"Don't spray now",
+r_windy:"Wind is too strong; spray will drift",r_calm:"Air is very still; fine droplets can hang and drift",r_windok:"Wind is gentle",r_wet:"Rain in the last hour; leaves are wet",r_rainsoon:"Rain likely in the next 6 hours; it may wash spray off",r_dry6:"No rain expected in the next 6 hours",r_hot:"Very hot; spray early morning or late afternoon",r_fcwind:"Station offline, so this uses the forecast. Check wind on site.",
+p_good:"Good planting signal",p_wait:"Not yet: wait for more rain",p_caution:"Close: check your soil by hand first",
+p_rain3:"Rain in the last 3 days",p_need:"About 25 mm over a few days is a common starting rule",p_soil:"Soil moisture",p_fc7:"Forecast rain, next 7 days",p_dry:"Low rain forecast; seedlings may face a dry spell",p_ex:"Exhibition mode: station readings are not from a field",p_rule:"Thresholds are starting points, to be confirmed with extension guidelines",
+rain_h:"Rain",r_today:"Today",r_7:"Last 7 days",r_season:"Season",r_1h:"Last hour",r_since:"since 1 Nov",
+cmp_h:"Why a local station matters",cmp_t:"Today the forecast model expected {f} mm. Our station measured {m} mm.",cmp_na:"This comparison appears when station and forecast data are both available.",
+rain_daily:"Daily rain, last 7 days (mm)",charts_h:"Trends",d7:"7 days",
+c_temp:"Air temperature (°C)",c_hum:"Humidity (%)",c_wind:"Wind speed (m/s)",c_soil:"Soil moisture (%)",nochart:"Not enough data for this period",
+dl_h:"Download data",dl_sub:"Measured station data only. Free under CC BY 4.0. Please cite the station when you use it.",
+dl_ch:"Data",ch_w:"Weather",ch_s:"Soil",dl_from:"From",dl_to:"To",dl_res:"Time step",res_raw:"Every reading (max ~2 days)",res_10:"10-minute average",res_60:"Hourly average",res_d:"Daily average",
+dl_csv:"Download CSV",dl_xlsx:"Download Excel",dl_json:"Get JSON",dl_limit:"Each download is limited to 8,000 rows. For long periods choose an hourly or daily step. Periods with no measurements are left out.",dl_wait:"Preparing your file…",dl_ok:"Downloaded {n} rows.",dl_none:"No measurements in this period (the station was offline). Try other dates.",dl_err:"Download failed. Check your internet and try again.",
+api_h:"For developers: open API",api_last:"Latest weather reading (JSON)",api_soil:"Latest soil reading (JSON)",api_note:"Read-only keys. Add &results=N, &start=, &end= or &average= as in the ThingSpeak API.",
+dict_h:"Data dictionary",t_ch:"Channel · field",t_name:"Variable",t_unit:"Unit",t_sensor:"Sensor",
+q_h:"Data quality notes. ",q_b:"Low-cost sensors, validation in progress. Rain total restarts when the station restarts; use the increase between readings. Soil readings are only valid when the probe is buried with good contact (moisture below 5% usually means the probe is not in soil). Empty values mean no reading. Check the deployment history for where the station was on each date.",
+dep_h:"Deployment history",t_site:"Site",t_from:"From",t_to:"To",now:"now",cite_h:"How to cite",
+health_h:"Station health",health_sub:"Open about how reliable the station is.",h_last:"Last upload",h_up:"Coverage, 7 days",h_rec:"Weather records",h_rec2:"Soil records",
+open_h:"Licences",l_hw:"Hardware",l_hw_n:"Build, sell and modify; share your improvements.",l_sw:"Firmware and code",l_sw_n:"Use and change freely; keep it open.",l_data:"Data and documents",l_data_n:"Use for anything; give credit.",
+contrib_h:"Ways to help",c1:"Host a station and join the network",c2:"Report a problem or suggest an idea to the team",c3:"Improve the Chichewa and add other local languages",c4:"Use the data in research, teaching or your own app",
+about_h:"About Muuni",about_1:"Most smallholder farmers decide when to plant, spray and apply fertiliser without local weather or soil data. The nearest official station can be far away, and conditions change over short distances.",
+about_2:"Muuni is a low-cost station built from widely available parts. It measures air temperature, humidity, pressure, wind, rain and seven soil properties, sends them to the cloud, and turns them into simple advice in English and Chichewa through the Muuni app.",
+about_3:"Next: more stations across districts forming an open network, SMS advice for farmers without smartphones, and voice advice in Chichewa.",by:"Built by",share:"Share on WhatsApp",
+share_text:"Live open weather and soil data from the Muuni station, Malawi:",
+foot:"Station data: ThingSpeak. Forecast: Open-Meteo.com (CC BY 4.0). Page refreshes every minute."},
+
+ny:{b_hw:"Zipangizo zotsegula",b_sw:"Mapulogalamu otsegula",b_data:"Deta yotsegula",
+tagline:"Deta ya nyengo ndi nthaka kuchokera ku siteshoni yotsika mtengo yothandiza alimi ambiri. Yaulere kuona, kutsitsa ndi kugwiritsa ntchito.",
+nav_live:"Pano",nav_fc:"Zolosera",nav_adv:"Malangizo",nav_rain:"Mvula",nav_charts:"Ma graph",nav_dl:"Tsitsani",nav_health:"Thanzi la siteshoni",nav_open:"Malayisensi",nav_about:"Za Muuni",
+ex_t:"Chiwonetsero",ex_b:"Siteshoni ili pa chiwonetsero. Zoyezedwa sizingaimire nyengo ya m'munda.",
+live_h:"Pakali pano",readings_h:"Miyeso ya siteshoni",measured:"ZOYEZEDWA",measured_old:"ZOYEZEDWA · ZAKALE",forecast:"ZOLOSERA",loading:"Tikutsitsa…",
+online:"Ikugwira ntchito",offline:"Sikugwira ntchito",last_seen:"yomaliza",last_reading:"Muyeso womaliza",ago:"zapitazo",min:"mphindi",h:"maola",d:"masiku",
+noconn:"Sitinathe kufikira seva ya deta. Onani intaneti yanu.",
+air:"Kutentha",hum:"Chinyezi",dew:"Mame",pres:"Mphamvu ya mpweya",wind:"Mphepo",gust_k:"Mphepo yamphamvu",avg30:"Avereji",rain_today:"Mvula lero",rain1h:"Ola lapitali",
+soilm:"Chinyezi cha nthaka",soilt:"Kutentha kwa nthaka",ph:"pH ya nthaka",ec:"EC ya nthaka",npk:"N · P · K",notsoil:"Sichili m'nthaka",check:"Onani",unrel:"sizodalirika",
+fc_h:"Masiku 7 akubwerawa",fc_sub:"Kuchokera ku Open-Meteo, osati ku siteshoni yathu.",fc_next24:"Mwayi wa mvula, maola 24",today:"Lero",sky_k:"Thambo",cloud:"Mitambo",
+uv0:"Pang'ono",uv1:"Pakatikati",uv2:"Wamphamvu",uv3:"Wamphamvu kwambiri",uv4:"Woopsa",
+w_clear:"Kuyera",w_partly:"Mitambo pang'ono",w_cloudy:"Mitambo",w_fog:"Nkhungu",w_drizzle:"Mvula yowaza",w_rain:"Mvula",w_storm:"Mabingu",
+adv_h:"Zochita lero",adv_sub:"Malangizo osavuta ochokera ku zoyezedwa ndi zolosera. Nthawi zonse onani munda wanu ndi malangizo a mlangizi.",
+spray_h:"KUPOPERA",plant_h:"KUBZALA",
+s_good:"Ndi bwino kupopera tsopano",s_caution:"Popani mosamala",s_no:"Musapopere pano",
+r_windy:"Mphepo ndi yamphamvu; mankhwala adzauluka",r_calm:"Mpweya sukuyenda; timadontho tingauluke",r_windok:"Mphepo ndi yofatsa",r_wet:"Mvula yagwa mu ola lapitali; masamba ndi onyowa",r_rainsoon:"Mvula ingagwe m'maola 6; ingakokolole mankhwala",r_dry6:"Mvula siikuyembekezeka m'maola 6",r_hot:"Kwatentha kwambiri; popani m'mawa kapena madzulo",r_fcwind:"Siteshoni sikugwira ntchito, ndiye tagwiritsa ntchito zolosera. Onani mphepo pamalopo.",
+p_good:"Chizindikiro chabwino chobzala",p_wait:"Osati pano: dikirani mvula yambiri",p_caution:"Pafupi: onani nthaka ndi manja kaye",
+p_rain3:"Mvula ya masiku 3 apitawa",p_need:"Pafupifupi 25 mm m'masiku ochepa ndi lamulo loyambira",p_soil:"Chinyezi cha nthaka",p_fc7:"Mvula yoloseredwa, masiku 7",p_dry:"Mvula yochepa ikuyembekezeka; mbewu zingakumane ndi chilala",p_ex:"Chiwonetsero: zoyezedwa sizichokera m'munda",p_rule:"Miyeso iyi ndi poyambira; itsimikizidwe ndi malangizo a alangizi",
+rain_h:"Mvula",r_today:"Lero",r_7:"Masiku 7",r_season:"Nyengo ino",r_1h:"Ola lapitali",r_since:"kuyambira 1 Nov",
+cmp_h:"Chifukwa chake siteshoni ya kwanu ili yofunika",cmp_t:"Lero zolosera zinati {f} mm. Siteshoni yathu yayeza {m} mm.",cmp_na:"Kuyerekeza kudzaoneka deta ya siteshoni ndi zolosera zikapezeka.",
+rain_daily:"Mvula ya tsiku lililonse, masiku 7 (mm)",charts_h:"Momwe zikuyendera",d7:"Masiku 7",
+c_temp:"Kutentha kwa mpweya (°C)",c_hum:"Chinyezi cha mpweya (%)",c_wind:"Liwiro la mphepo (m/s)",c_soil:"Chinyezi cha nthaka (%)",nochart:"Palibe deta yokwanira",
+dl_h:"Tsitsani deta",dl_sub:"Deta yoyezedwa yokha. Yaulere pansi pa CC BY 4.0. Chonde tchulani siteshoniyi mukamagwiritsa ntchito.",
+dl_ch:"Deta",ch_w:"Nyengo",ch_s:"Nthaka",dl_from:"Kuyambira",dl_to:"Mpaka",dl_res:"Nthawi pakati pa miyeso",res_raw:"Muyeso uliwonse (masiku ~2 okha)",res_10:"Avereji ya mphindi 10",res_60:"Avereji ya ola lililonse",res_d:"Avereji ya tsiku lililonse",
+dl_csv:"Tsitsani CSV",dl_xlsx:"Tsitsani Excel",dl_json:"Tengani JSON",dl_limit:"Kutsitsa kulikonse kuli ndi mizere 8,000. Kwa nthawi yaitali sankhani ola kapena tsiku. Nthawi zopanda miyeso sizikuphatikizidwa.",dl_wait:"Tikukonza fayilo yanu…",dl_ok:"Mwatsitsa mizere {n}.",dl_none:"Palibe miyeso m'nthawi imeneyi (siteshoni sinali kugwira ntchito). Yesani masiku ena.",dl_err:"Kutsitsa kwalephera. Onani intaneti yanu ndipo yesaninso.",
+api_h:"Kwa opanga mapulogalamu: API yotsegula",api_last:"Muyeso womaliza wa nyengo (JSON)",api_soil:"Muyeso womaliza wa nthaka (JSON)",api_note:"Makiyi owerengera okha. Onjezani &results=N, &start=, &end= kapena &average= monga mu ThingSpeak API.",
+dict_h:"Tanthauzo la deta",t_ch:"Channel · field",t_name:"Chimene chimayezedwa",t_unit:"Muyeso",t_sensor:"Choyezera",
+q_h:"Za ubwino wa deta. ",q_b:"Zoyezera zotsika mtengo; kutsimikizira kukupitirira. Mvula yonse imayambiranso siteshoni ikayambiranso; gwiritsani ntchito kuwonjezeka pakati pa miyeso. Za nthaka ndi zolondola choyezera chikakwiriridwa bwino (chinyezi chosakwana 5% nthawi zambiri chimatanthauza kuti sichili m'nthaka). Malo opanda kanthu ndi opanda muyeso. Onani mbiri ya malo kuti mudziwe kumene siteshoni inali tsiku lililonse.",
+dep_h:"Mbiri ya malo",t_site:"Malo",t_from:"Kuyambira",t_to:"Mpaka",now:"pano",cite_h:"Momwe mungatchulire",
+health_h:"Thanzi la siteshoni",health_sub:"Tikuonetsa poyera momwe siteshoni imagwirira ntchito.",h_last:"Kutumiza komaliza",h_up:"Kupezeka, masiku 7",h_rec:"Miyeso ya nyengo",h_rec2:"Miyeso ya nthaka",
+open_h:"Malayisensi",l_hw:"Zipangizo",l_hw_n:"Pangani, gulitsani ndi kusintha; gawanani zokonza zanu.",l_sw:"Mapulogalamu",l_sw_n:"Gwiritsani ntchito ndi kusintha; zisiyeni zotsegula.",l_data:"Deta ndi zolemba",l_data_n:"Gwiritsani ntchito chilichonse; tchulani kumene mwatenga.",
+contrib_h:"Njira zothandizira",c1:"Sungani siteshoni ndi kulowa nawo mu netiweki",c2:"Nenani vuto kapena perekani maganizo kwa gulu lathu",c3:"Konzani Chichewa ndi kuwonjezera zilankhulo zina",c4:"Gwiritsani ntchito deta pa kafukufuku, kuphunzitsa kapena pulogalamu yanu",
+about_h:"Za Muuni",about_1:"Alimi ambiri ang'onoang'ono amasankha nthawi yobzala, kupopera ndi kuthira feteleza popanda deta ya nyengo kapena nthaka ya kwawo. Siteshoni ya boma ingakhale kutali, ndipo nyengo imasintha pa mtunda waufupi.",
+about_2:"Muuni ndi siteshoni yotsika mtengo yopangidwa ndi zigawo zopezeka mosavuta. Imayeza kutentha, chinyezi, mphamvu ya mpweya, mphepo, mvula ndi zinthu 7 za nthaka, imatumiza ku cloud, ndipo imapereka malangizo osavuta m'Chingerezi ndi m'Chichewa kudzera mu pulogalamu ya Muuni.",
+about_3:"Chotsatira: masiteshoni ambiri m'maboma osiyanasiyana, malangizo kudzera pa SMS kwa alimi opanda mafoni amakono, ndi malangizo amawu m'Chichewa.",by:"Yapangidwa ndi",share:"Gawanani pa WhatsApp",
+share_text:"Deta yotsegula ya nyengo ndi nthaka kuchokera ku siteshoni ya Muuni, Malawi:",
+foot:"Deta ya siteshoni: ThingSpeak. Zolosera: Open-Meteo.com (CC BY 4.0). Tsambali limadzisintha mphindi iliyonse."}
+};
+const DAYS = { en:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], ny:["Lamulungu","Lolemba","Lachiwiri","Lachitatu","Lachinayi","Lachisanu","Loweruka"] };
+
+let LANG = "en";
+try { const s = localStorage.getItem("muuni-lang"); if (s === "ny" || s === "en") LANG = s; } catch(e) {}
+const t = k => (T[LANG][k] ?? T.en[k] ?? k);
+const L = o => (o && (o[LANG] ?? o.en)) || "";
+
+const DICT = [
+ ["weather","1","Air temperature","°C","BME280"],["weather","2","Relative humidity","%","BME280"],["weather","3","Air pressure","hPa","BME280"],
+ ["weather","4","Wind speed (30 s average)","m/s","Cup anemometer (reed switch)"],["weather","5","Wind direction (from)","degrees (0 = N)","Wind vane (potentiometric)"],
+ ["weather","6","Rain total since station start","mm","Tipping bucket, 0.2 mm/tip"],["weather","7","Wind gust (3 s)","m/s","Cup anemometer"],["weather","8","Rain, last hour","mm","Tipping bucket"],
+ ["soil","1","Soil moisture","% (volumetric)","7-in-1 RS485 soil probe"],["soil","2","Soil temperature","°C","7-in-1 soil probe"],["soil","3","Electrical conductivity","µS/cm","7-in-1 soil probe"],
+ ["soil","4","Soil pH","pH","7-in-1 soil probe"],["soil","5","Nitrogen (N)","mg/kg (indicative)","7-in-1 soil probe"],["soil","6","Phosphorus (P)","mg/kg (indicative)","7-in-1 soil probe"],["soil","7","Potassium (K)","mg/kg (indicative)","7-in-1 soil probe"]
+];
+
+/* ---------- icons (same line style as the app) ---------- */
+const IC = {
+ drop:'<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/>',
+ dropHalf:'<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/><path d="M6.2 14h11.6a6 6 0 0 1-11.6 0z" fill="currentColor"/>',
+ wind:'<path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+ gauge:'<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-5"/>',
+ flask:'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/>',
+ therm:'<path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/><path d="M12 9v7" />',
+ bolt:'<path d="M13 2L5 14h6l-1 8 8-12h-6z"/>',
+ leaf:'<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15"/><path d="M5 19l7-7"/>',
+ clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+ chart:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+ db:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>'
+};
+const icon = (k, color="#1E6B45", s=26) => `<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:${color}">${IC[k]}</svg>`;
+const CLOUDP = '<path d="M7 18h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.5 1.6A3.3 3.3 0 0 0 7 18z"/>';
+const WX = {
+ clear:'<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+ partly:'<circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/><path d="M9 20h8a3.5 3.5 0 0 0 0-7 4.6 4.6 0 0 0-8.7 1.3A2.9 2.9 0 0 0 9 20z"/>',
+ cloudy:CLOUDP, fog:'<path d="M4 9h16M4 13h16M6 17h12"/>',
+ drizzle:'<g fill="currentColor" stroke="none"><circle cx="7" cy="7" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="17" cy="7" r="1.6"/><circle cx="9.5" cy="11" r="1.6"/><circle cx="14.5" cy="11" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="12" cy="17" r="1.6"/><circle cx="17" cy="15" r="1.6"/></g>',
+ rain:'<path d="M7 14h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.5 1.6A3.3 3.3 0 0 0 7 14z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>',
+ storm:'<path d="M7 14h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.5 1.6A3.3 3.3 0 0 0 7 14z"/><path d="M12 14l-2 4h4l-2 4"/>'
+};
+function wxKind(c){ if (c===0) return "clear"; if (c<=2) return "partly"; if (c===3) return "cloudy"; if (c===45||c===48) return "fog"; if (c>=51&&c<=57) return "drizzle"; if (c>=95) return "storm"; if (c>=61) return "rain"; return "cloudy"; }
+const wxIcon = (kind, s=26) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#1D5FA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#1D5FA8">${WX[kind]}</svg>`;
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const num = v => { if (v === null || v === undefined || v === "") return null; const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+const fmt = (v, d=1) => v === null || v === undefined || !Number.isFinite(v) ? "—" : v.toFixed(d);
+const tsBase = "https://api.thingspeak.com/channels/";
+const dkFmt = new Intl.DateTimeFormat("en-CA",{timeZone:CFG.tz});
+const todayKey = () => dkFmt.format(new Date());
+const dayKeyOffset = n => dkFmt.format(new Date(Date.now()-n*864e5));
+const COMPASS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+const compass = deg => deg === null ? "" : COMPASS[Math.round(((deg%360)+360)%360/22.5)%16];
+const beaufort = v => v === null ? null : [0.3,1.6,3.4,5.5,8,10.8,13.9,17.2,20.8,24.5,28.5,32.7].findIndex(x => v < x) < 0 ? 12 : [0.3,1.6,3.4,5.5,8,10.8,13.9,17.2,20.8,24.5,28.5,32.7].findIndex(x => v < x);
+const dewPoint = (T,RH) => { if (T===null||RH===null||RH<=0) return null; const a=17.62,b=243.12,g=Math.log(RH/100)+a*T/(b+T); return b*g/(a-g); };
+const hhmm = ms => new Intl.DateTimeFormat("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:CFG.tz}).format(new Date(ms));
+function agoText(ms){ const m = Math.round(ms/60000); if (m < 60) return `${m} ${t("min")} ${t("ago")}`; const h = Math.round(m/60); if (h < 48) return `${h} ${t("h")} ${t("ago")}`; return `${Math.round(h/24)} ${t("d")} ${t("ago")}`; }
+async function getJSON(url){ const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
+
+/* ---------- state ---------- */
+const S = { wLast:null, sLast:null, wSeries:[], sSeries:[], wChan:null, sChan:null, fc:null, range:1, err:false, skyKey:"" };
+
+async function loadAll(){
+  const w = CFG.weather, s = CFG.soil, tz = encodeURIComponent(CFG.tz);
+  const startD = new Date(Math.min(Date.parse(CFG.seasonStart+"T00:00:00+02:00"), Date.now()-8*864e5));
+  const start = dkFmt.format(startD) + "%2000:00:00";
+  const jobs = [
+    getJSON(`${tsBase}${w.id}/feeds/last.json?api_key=${w.key}&timezone=${tz}`).then(d=>S.wLast=d),
+    getJSON(`${tsBase}${s.id}/feeds/last.json?api_key=${s.key}&timezone=${tz}`).then(d=>S.sLast=d),
+    getJSON(`${tsBase}${w.id}/feeds.json?api_key=${w.key}&timezone=${tz}&average=10&start=${start}`).then(d=>{S.wSeries=d.feeds||[];S.wChan=d.channel;}),
+    getJSON(`${tsBase}${s.id}/feeds.json?api_key=${s.key}&timezone=${tz}&average=10&days=8`).then(d=>{S.sSeries=d.feeds||[];S.sChan=d.channel;}),
+    getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,weather_code,cloud_cover,is_day&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,uv_index_max&timezone=${tz}&wind_speed_unit=ms&forecast_days=7`).then(d=>S.fc=d)
+  ];
+  const res = await Promise.allSettled(jobs);
+  S.err = res.slice(0,2).every(r => r.status === "rejected");
+  render();
+}
+
+/* ---------- derived ---------- */
+function isStale(e){ if (!e || !e.created_at) return true; return (Date.now() - Date.parse(e.created_at)) > CFG.staleMinutes*60000; }
+function rainByDay(){
+  const out = {}; let prev = null;
+  for (const e of S.wSeries){
+    const v = num(e.field6); if (v === null) continue;
+    if (prev !== null){ const inc = v >= prev ? v - prev : v; const k = e.created_at.slice(0,10); out[k] = (out[k]||0) + inc; }
+    prev = v;
+  }
+  return out;
+}
+function series(list, f){ return list.map(e => ({t:Date.parse(e.created_at), v:num(e[f])})).filter(p => p.v !== null && Number.isFinite(p.t)); }
+function hourIndexNow(){
+  const f = S.fc; if (!f || !f.hourly) return -1;
+  const now = Date.now(); const idx = f.hourly.time.findIndex(x => Date.parse(x+":00+02:00") > now);
+  return idx <= 0 ? 0 : idx - 1;
+}
+
+/* ---------- render ---------- */
+function render(){
+  document.documentElement.lang = LANG === "ny" ? "ny" : "en";
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $("lang-en").classList.toggle("on", LANG==="en"); $("lang-ny").classList.toggle("on", LANG==="ny");
+  $("place").textContent = L(CFG.place);
+  renderLive(); renderForecast(); renderAdvice(); renderRain(); renderCharts(); renderDownload(); renderHealth(); renderStatic();
+}
+
+function setPill(el, stale){ el.className = "pill " + (stale ? "old" : "m"); el.textContent = stale ? t("measured_old") : t("measured"); }
+function ic(iconKey, k, v, unit, extra, stale){
+  return `<div class="ic${stale?" old":""}">${icon(iconKey)}<div class="k">${k}</div><div class="v">${v}${unit && v!=="—"?`<small>${unit}</small>`:""}</div>${extra||""}</div>`;
+}
+
+function renderLive(){
+  const w = S.wLast, s = S.sLast, st = $("status"), txt = $("st-text");
+  const stale = isStale(w), sStale = isStale(s);
+  ["live-pill","sky-pill","rd-pill","wind-pill","rain-pill"].forEach(id => setPill($(id), stale));
+  if (S.err){ st.className = "statuspill"; txt.textContent = t("noconn"); }
+  else if (w && w.created_at){
+    const when = Date.parse(w.created_at);
+    st.className = "statuspill" + (stale ? "" : " ok");
+    txt.textContent = stale ? `${t("offline")} · ${t("last_seen")} ${agoText(Date.now()-when)}` : `${t("online")} · ${t("last_reading")} ${agoText(Date.now()-when)}`;
+  }
+  const T0 = w?num(w.field1):null, RH = w?num(w.field2):null, P = w?num(w.field3):null, WS = w?num(w.field4):null, WD = w?num(w.field5):null, G = w?num(w.field7):null, R1 = w?num(w.field8):null;
+  // sky card
+  $("sky-when").textContent = w && w.created_at ? `${t("last_reading")} · ${hhmm(Date.parse(w.created_at))}` : "—";
+  $("sky-temp").textContent = T0 === null ? "—" : `${fmt(T0)}°`;
+  const cur = S.fc && S.fc.current;
+  $("sky-cond").textContent = cur ? `${t("w_"+wxKind(cur.weather_code))} · ${t("cloud")} ${cur.cloud_cover}%` : "";
+  $("sk-h").textContent = RH===null?"—":`${fmt(RH,0)}%`;
+  $("sk-d").textContent = (()=>{ const d = dewPoint(T0,RH); return d===null?"—":`${fmt(d)}°`; })();
+  $("sk-p").textContent = P===null?"—":fmt(P,0);
+  $("sk-w").textContent = WS===null?"—":`${fmt(WS)}`;
+  drawSky(stale, cur, WS, R1);
+
+  // icon cards
+  const sm = s?num(s.field1):null, ph = s?num(s.field4):null, out = sm !== null && sm < 5;
+  const rdToday = rainByDay()[todayKey()];
+  let smChip = ""; if (out) smChip = `<span class="chip amber">⚠ ${t("notsoil")}</span>`; else if (sm !== null && sm < 10) smChip = `<span class="chip amber">⚠ ${t("check")}</span>`;
+  const phBad = out || (ph !== null && (ph < 3.5 || ph > 9.5));
+  $("live-grid").innerHTML =
+    ic("drop", t("rain_today"), S.wSeries.length ? fmt(rdToday||0) : "—", "mm", "", stale) +
+    ic("wind", t("wind"), fmt(WS), "m/s", `<div class="n">${WD!==null?compass(WD):"—"}</div>`, stale) +
+    ic("gauge", t("pres"), fmt(P,0), "hPa", "", stale) +
+    ic("dropHalf", t("soilm"), out ? "—" : fmt(sm,0), "%", smChip, sStale) +
+    ic("flask", t("ph"), fmt(ph), "", phBad ? `<span class="chip grey">${t("unrel")}</span>` : "", sStale) +
+    ic("therm", t("soilt"), fmt(s?num(s.field2):null), "°C", "", sStale) +
+    ic("bolt", t("ec"), out ? "—" : fmt(s?num(s.field3):null,0), "µS/cm", "", sStale) +
+    ic("leaf", t("npk"), out ? "—" : [5,6,7].map(i=>fmt(s?num(s["field"+i]):null,0)).join("/"), "", `<div class="n">mg/kg</div>`, sStale).replace('class="v"','class="v" style="font-size:19px;white-space:nowrap;letter-spacing:-.5px"') +
+    ic("therm", t("air"), fmt(T0), "°C", "", stale);
+
+  // wind card
+  $("w-big").innerHTML = WS===null ? "—" : `${fmt(WS)}<small> m/s</small>`;
+  $("w-dir").textContent = WD===null ? "—" : `${compass(WD)} · ${Math.round(WD)}°`;
+  $("w-avg").textContent = WS===null?"—":`${fmt(WS)} m/s`;
+  $("w-gust").textContent = G===null?"—":`${fmt(G)} m/s`;
+  const bf = beaufort(WS); $("w-bf").textContent = bf===null?"—":bf;
+  drawCompass(WD, stale);
+}
+
+function drawCompass(deg, stale){
+  const c = 75, r = 66; let ticks = "";
+  for (let i=0;i<16;i++){ const a=i*22.5*Math.PI/180, r1=i%4===0?r-12:r-7; ticks += `<line x1="${c+Math.sin(a)*r1}" y1="${c-Math.cos(a)*r1}" x2="${c+Math.sin(a)*(r-2)}" y2="${c-Math.cos(a)*(r-2)}" stroke="#D9D4C7" stroke-width="2" stroke-linecap="round"/>`; }
+  const lab = [["N",c,24],["E",128,c+5],["S",c,132],["W",22,c+5]].map(([s,x,y])=>`<text x="${x}" y="${y}" text-anchor="middle" font-size="15" font-weight="800" fill="${s==="N"?"#1E6B45":"#56615A"}" font-family="inherit">${s}</text>`).join("");
+  const needle = deg===null ? "" : `<g transform="rotate(${deg} ${c} ${c})" style="transition:transform .8s"><path d="M${c} ${c-46} L${c-7} ${c} L${c+7} ${c} Z" fill="#E7E2D6"/><path d="M${c} ${c+46} L${c-7} ${c} L${c+7} ${c} Z" fill="${stale?"#9AA3AF":"#1E6B45"}"/></g>`;
+  $("compass").innerHTML = `<circle cx="${c}" cy="${c}" r="${r+4}" fill="#F7F5EF" stroke="#E4E0D5" stroke-width="2"/>${ticks}${lab}${needle}<circle cx="${c}" cy="${c}" r="6" fill="#3B4540"/>`;
+}
+
+/* animated sky: sun/moon, clouds by cloud cover, rain drops, maize swaying with wind */
+function drawSky(stale, cur, wind, rain1h){
+  const isDay = cur ? cur.is_day === 1 : (()=>{ const h = +new Intl.DateTimeFormat("en-GB",{hour:"numeric",hour12:false,timeZone:CFG.tz}).format(new Date()); return h>=6 && h<18; })();
+  const cc = cur ? cur.cloud_cover : 30;
+  const raining = (!stale && rain1h !== null && rain1h > 0) || (cur && [51,53,55,61,63,65,80,81,82,95,96,99].includes(cur.weather_code));
+  const sky = $("sky"); sky.classList.toggle("night", !isDay && !stale); sky.classList.toggle("old", stale);
+  const key = [isDay,stale,Math.round(cc/20),raining,Math.round((wind||0))].join("|");
+  if (key === S.skyKey) return; S.skyKey = key;
+  let h = "";
+  if (isDay){
+    h += `<div class="sun"><div class="halo"></div><div class="rays"></div><div class="core"></div></div>`;
+    // faint lens flare along the line from the sun towards the lower left, like a camera photo of the sky
+    [[.62,.5,22,"rgba(255,240,200,.10)"],[.48,.66,12,"rgba(200,230,255,.12)"],[.36,.8,34,"rgba(255,225,190,.06)"]].forEach(([x,y,r,c]) =>
+      h += `<span class="flare" style="right:${(1-x)*100}%;top:${y*100}%;width:${r}px;height:${r}px;background:radial-gradient(circle,${c},transparent 70%)"></span>`);
+  }
+  else { h += `<div class="moon"></div>`; for (let i=0;i<22;i++) h += `<span class="star" style="left:${Math.random()*100}%;top:${Math.random()*55}%;animation-delay:${Math.random()*3}s"></span>`; }
+  const nClouds = Math.max(2, Math.round(cc/14)) + (raining?2:0);
+  for (let i=0;i<nClouds;i++){
+    const w = 170 + Math.random()*130, top = -10 + Math.random()*120, dur = 90 + Math.random()*70, delay = -Math.random()*dur;
+    const f = () => `filter:url(#cf${Math.floor(Math.random()*3)})`;
+    const e = (cls,l,t,ww,hh) => `<div class="cl ${cls}" style="left:${l*w}px;top:${t*w}px;width:${ww*w}px;height:${hh*w}px;${f()}"></div>`;
+    h += `<div class="track" style="top:${top}px;animation-duration:${dur}s;animation-delay:${delay}s"><div class="cloud" style="width:${w}px;height:${w*.62}px">` +
+      e("base",.04,.27,.92,.32) + e("top",0,.17,.52,.3) + e("top",.22,0,.52,.42) + e("top",.5,.1,.48,.34) + e("top",.3,.2,.4,.22) + `</div></div>`;
+  }
+  if (raining) for (let i=0;i<46;i++) h += `<span class="drop" style="left:${Math.random()*100}%;animation-duration:${.6+Math.random()*.5}s;animation-delay:${-Math.random()}s"></span>`;
+  $("sky-layer").innerHTML = h;
+  S.sky = { isDay, raining, stale };
+  drawCrops(wind);
+}
+
+/* maize row across the full card width, swaying faster in stronger wind */
+function drawCrops(wind){
+  const W = Math.max(300, Math.round($("sky").clientWidth || 400));
+  const sway = Math.max(1.4, 4 - Math.min(3, (wind||0)*.5));
+  let p = "";
+  for (let x=6; x<W; x+=15+Math.random()*8){
+    const ht = 34 + Math.random()*22, base = 64;
+    p += `<g class="plant" style="animation-duration:${sway+Math.random()}s;animation-delay:${-Math.random()*2}s;transform-box:fill-box">
+      <path d="M${x} ${base} L${x} ${base-ht}" stroke="#18301F" stroke-width="2.2"/>
+      <path d="M${x} ${base-ht*.35} q-9 -6 -14 -2 M${x} ${base-ht*.55} q9 -7 14 -3 M${x} ${base-ht*.75} q-8 -6 -12 -3 M${x} ${base-ht*.9} q6 -6 9 -2" stroke="#18301F" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>`;
+  }
+  const svg = $("crops"); svg.setAttribute("viewBox", `0 0 ${W} 64`); svg.setAttribute("preserveAspectRatio","none");
+  svg.innerHTML = `<rect x="0" y="54" width="${W}" height="10" fill="#18301F"/>` + p;
+  S.cropW = W; S.cropWind = wind;
+}
+let _rz; window.addEventListener("resize", () => { clearTimeout(_rz); _rz = setTimeout(() => { if (Math.abs(($("sky").clientWidth||0) - (S.cropW||0)) > 40) drawCrops(S.cropWind); }, 250); });
+
+/* ---------- birds and aircraft crossing the sky ---------- */
+const REDUCED = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const rnd = (a,b) => a + Math.random()*(b-a);
+function birdSVG(size, flap){
+  // wing-beat: up, level, down; with a short glide pause in the cycle
+  const up = "M0 6 Q5 0 10 6 Q15 0 20 6", mid = "M0 5 Q5 3.5 10 6 Q15 3.5 20 5", down = "M0 3 Q5 9 10 6 Q15 9 20 3";
+  return `<svg width="${size}" height="${size*.45}" viewBox="0 0 20 9" style="overflow:visible">
+    <path d="${mid}" fill="none" stroke="#1B2430" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".82">
+      <animate attributeName="d" dur="${flap}s" repeatCount="indefinite" begin="-${rnd(0,flap).toFixed(2)}s"
+        values="${up};${mid};${down};${mid};${up};${up};${mid};${mid}" keyTimes="0;.14;.28;.42;.56;.7;.85;1"/>
+    </path></svg>`;
+}
+function spawnBirds(){
+  const sky = $("sky"), st = S.sky || {};
+  if (!REDUCED && !document.hidden && st.isDay !== false && !st.raining){
+    const W = sky.clientWidth, n = Math.round(rnd(3,7)), ltr = Math.random() < .6, top = rnd(18, 120), dur = rnd(14, 22);
+    const el = document.createElement("div"); el.className = "flyer"; el.style.top = top+"px";
+    let inner = "";
+    for (let i=0;i<n;i++){
+      const row = Math.ceil(i/2), side = i%2 ? 1 : -1, size = rnd(11, 16);
+      const dx = -row*rnd(14,20) + rnd(-4,4), dy = side*row*rnd(7,11) + rnd(-3,3);
+      inner += `<div style="position:absolute;left:${dx}px;top:${dy}px;animation:bob ${rnd(2.5,4).toFixed(1)}s ease-in-out infinite alternate">${birdSVG(size, rnd(.45,.7).toFixed(2))}</div>`;
+    }
+    el.innerHTML = `<div style="position:relative;${ltr?"":"transform:scaleX(-1)"}">${inner}</div>`;
+    $("sky-fly").appendChild(el);
+    const from = ltr ? -80 : W+80, to = ltr ? W+80 : -80, rise = rnd(-25, 15);
+    const a = el.animate([{transform:`translate(${from}px,0)`},{transform:`translate(${(from+to)/2}px,${rise/2}px)`},{transform:`translate(${to}px,${rise}px)`}], {duration:dur*1000, easing:"linear"});
+    a.onfinish = () => el.remove();
+  }
+  setTimeout(spawnBirds, rnd(20, 40)*1000);
+}
+function spawnPlane(){
+  const sky = $("sky"), st = S.sky || {};
+  if (!REDUCED && !document.hidden && !st.raining){
+    const W = sky.clientWidth, ltr = Math.random() < .5, top = rnd(3, 12), dur = rnd(34, 48), night = !st.isDay, size = rnd(17, 21);
+    const el = document.createElement("div"); el.className = "flyer"; el.style.top = top+"px";
+    const body = night ? "#2A3346" : "#F4F6F8";
+    el.innerHTML = `<div style="position:relative;transform:rotate(${ltr?90:-90}deg) rotate(${rnd(-4,4)}deg)">
+        <svg width="${size}" height="${size}" viewBox="0 0 24 24"><path fill="${body}" d="M12 2c.8 0 1.3.7 1.3 1.6V9l7.7 4.4v1.8l-7.7-2.3v4.7l2.2 1.6v1.4L12 19.7l-3.5.9v-1.4l2.2-1.6v-4.7L3 15.2v-1.8L10.7 9V3.6C10.7 2.7 11.2 2 12 2z"/></svg>
+        ${night ? `<span class="navlight" style="left:${size*.08}px;top:${size*.58}px;background:#FF3B30"></span><span class="navlight" style="right:${size*.08}px;top:${size*.58}px;background:#34C759"></span><span class="navlight" style="left:${size/2-1.5}px;top:${size*.4}px;background:#fff;animation-delay:.6s"></span>` : ""}
+      </div>${night ? "" : `<div class="plane-trail" style="width:${rnd(140,220)}px;${ltr?"":"right:auto;left:100%;background:linear-gradient(270deg,rgba(255,255,255,0),rgba(255,255,255,.75))"}"></div>`}`;
+    $("sky-fly").appendChild(el);
+    const from = ltr ? -260 : W+260, to = ltr ? W+40 : -40, drift = rnd(-10, 10);
+    const a = el.animate([{transform:`translate(${from}px,0)`},{transform:`translate(${to}px,${drift}px)`}], {duration:dur*1000, easing:"linear"});
+    a.onfinish = () => el.remove();
+  }
+  setTimeout(spawnPlane, rnd(90, 160)*1000);
+}
+
+function renderForecast(){
+  const f = S.fc; if (!f || !f.daily){ $("fc-list").innerHTML = `<div class="n" style="padding:16px 0">—</div>`; return; }
+  $("fc-list").innerHTML = f.daily.time.map((d,i) => {
+    const k = wxKind(f.daily.weather_code[i]); const wd = new Date(d+"T12:00:00Z").getUTCDay();
+    return `<div class="row"><div class="d">${i===0?t("today"):(LANG==="ny"?DAYS.ny[wd].slice(0,6):DAYS.en[wd])}</div><div>${wxIcon(k)}</div><div class="c">${t("w_"+k)}</div>
+      <div class="p"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>${f.daily.precipitation_probability_max[i] ?? 0}%</div>
+      <div class="hi">${Math.round(f.daily.temperature_2m_max[i])}°</div><div class="lo">${Math.round(f.daily.temperature_2m_min[i])}°</div></div>`;
+  }).join("");
+  const i = hourIndexNow();
+  const uv = i >= 0 ? f.hourly.uv_index[i] : null;
+  const lvl = uv===null?null:(uv<3?0:uv<6?1:uv<8?2:uv<11?3:4);
+  $("uv-v").innerHTML = uv===null ? "—" : `${wxIcon("clear",30)}${Math.round(uv)}`;
+  $("uv-n").textContent = lvl===null ? "" : t("uv"+lvl) + (f.daily.uv_index_max ? ` · max ${Math.round(f.daily.uv_index_max[0])}` : "");
+  const cur = f.current;
+  $("sky-v").innerHTML = cur ? `${wxIcon(wxKind(cur.weather_code),30)}${t("w_"+wxKind(cur.weather_code))}` : "—";
+  $("sky-n").textContent = cur ? `${t("cloud")} ${cur.cloud_cover}%` : "";
+  const i0 = Math.max(0,i), probs = f.hourly.precipitation_probability.slice(i0, i0+24), hrs = f.hourly.time.slice(i0, i0+24);
+  $("fc-hours").innerHTML = barChart(probs.map((v,j)=>({label: j%4===0 ? hrs[j].slice(11,16) : "", v: v ?? 0})), 100, "#1D5FA8");
+}
+
+function renderAdvice(){
+  const w = S.wLast, f = S.fc, stale = isStale(w), i = hourIndexNow();
+  const r = []; let level = 2;
+  let wind = (!stale && w) ? num(w.field4) : null, usedFc = false;
+  if (wind === null && f && i >= 0){ wind = f.hourly.wind_speed_10m[i]; usedFc = true; r.push(t("r_fcwind")); }
+  if (wind !== null){
+    if (wind > 3.5){ level = 0; r.push(`${t("r_windy")} (${fmt(wind)} m/s)`); }
+    else if (wind < 0.5){ level = Math.min(level,1); r.push(`${t("r_calm")} (${fmt(wind)} m/s)`); }
+    else r.push(`${t("r_windok")} (${fmt(wind)} m/s)`);
+  }
+  const r1h = (!stale && w) ? num(w.field8) : null;
+  if (r1h !== null && r1h > 0){ level = 0; r.push(t("r_wet")); }
+  if (f && i >= 0){
+    const p6 = Math.max(...f.hourly.precipitation_probability.slice(i, i+6).map(v=>v??0));
+    if (p6 >= 50){ level = 0; r.push(`${t("r_rainsoon")} (${p6}%)`); } else r.push(`${t("r_dry6")} (${p6}%)`);
+    const temp = (!stale && w && num(w.field1) !== null) ? num(w.field1) : f.hourly.temperature_2m[i];
+    if (temp > 32){ level = Math.min(level,1); r.push(`${t("r_hot")} (${fmt(temp)}°C)`); }
+  }
+  if (usedFc) level = Math.min(level,1);
+  const src = $("spray-src"); src.className = "pill " + (usedFc ? "f" : "m"); src.textContent = usedFc ? t("forecast") : t("measured");
+  const sv = $("spray"); sv.textContent = [t("s_no"),t("s_caution"),t("s_good")][level]; sv.className = "ttl " + ["no","caution","good"][level];
+  $("spray-r").innerHTML = r.map(x=>`<li>${x}</li>`).join("");
+
+  const rd = rainByDay(); const rain3 = [0,1,2].reduce((a,n)=>a+(rd[dayKeyOffset(n)]||0),0);
+  const sm = S.sLast ? num(S.sLast.field1) : null; const smOk = sm !== null && sm >= 5 && !isStale(S.sLast);
+  const fc7 = f && f.daily ? f.daily.precipitation_sum.reduce((a,b)=>a+(b||0),0) : null;
+  const pr = []; let pl;
+  pr.push(`${t("p_rain3")}: ${fmt(rain3)} mm. ${t("p_need")}`);
+  if (smOk) pr.push(`${t("p_soil")}: ${fmt(sm,0)}%`);
+  if (fc7 !== null) pr.push(`${t("p_fc7")}: ${fmt(fc7)} mm`);
+  if (rain3 >= 25 && (fc7 === null || fc7 >= 10) && (!smOk || sm >= 20)) pl = 2; else if (rain3 >= 15) pl = 1; else pl = 0;
+  if (fc7 !== null && fc7 < 10){ pl = Math.min(pl,1); pr.push(t("p_dry")); }
+  if (CFG.exhibitionMode) pr.push(t("p_ex"));
+  pr.push(t("p_rule"));
+  const pv = $("plant"); pv.textContent = [t("p_wait"),t("p_caution"),t("p_good")][pl]; pv.className = "ttl " + ["no","caution","good"][pl];
+  $("plant-r").innerHTML = pr.map(x=>`<li>${x}</li>`).join("");
+}
+
+function renderRain(){
+  const rd = rainByDay(), today = todayKey(), stale = isStale(S.wLast), has = S.wSeries.length > 0;
+  const r7 = [0,1,2,3,4,5,6].reduce((a,n)=>a+(rd[dayKeyOffset(n)]||0),0);
+  const season = Object.entries(rd).filter(([k])=>k >= CFG.seasonStart).reduce((a,[,v])=>a+v,0);
+  $("rain-grid").innerHTML =
+    ic("drop", t("r_today"), has?fmt(rd[today]||0):"—", "mm", "", stale) +
+    ic("clock", t("r_1h"), fmt(S.wLast?num(S.wLast.field8):null), "mm", "", stale) +
+    ic("chart", t("r_7"), has?fmt(r7):"—", "mm", "", stale) +
+    ic("leaf", t("r_season"), has?fmt(season):"—", "mm", `<div class="n">${t("r_since")}</div>`, stale);
+  const f = S.fc;
+  $("cmp").textContent = (has && f && f.daily) ? " " + t("cmp_t").replace("{f}", fmt(f.daily.precipitation_sum[0])).replace("{m}", fmt(rd[today]||0)) : " " + t("cmp_na");
+  const days = [6,5,4,3,2,1,0].map(n => dayKeyOffset(n));
+  $("rain-bars").innerHTML = barChart(days.map(k => ({label:k.slice(8,10)+"/"+k.slice(5,7), v: rd[k]||0})), null, "#1E6B45", true);
+}
+
+function setRange(d){ S.range = d; $("r24").classList.toggle("on", d===1); $("r7").classList.toggle("on", d===7); renderCharts(); }
+function renderCharts(){
+  const since = Date.now() - S.range*864e5;
+  const ws = S.wSeries.filter(e => Date.parse(e.created_at) >= since), ss = S.sSeries.filter(e => Date.parse(e.created_at) >= since);
+  const soil = series(ss,"field1").filter(p => p.v >= 5);
+  $("chart-grid").innerHTML =
+    `<div class="card"><div class="k2">${t("c_temp")}</div>${lineChart(series(ws,"field1"),"#C2410C")}</div>` +
+    `<div class="card"><div class="k2">${t("c_hum")}</div>${lineChart(series(ws,"field2"),"#1D5FA8")}</div>` +
+    `<div class="card"><div class="k2">${t("c_wind")}</div>${lineChart(series(ws,"field4"),"#56615A")}</div>` +
+    `<div class="card"><div class="k2">${t("c_soil")}</div>${lineChart(soil,"#1E6B45")}</div>`;
+}
+function lineChart(pts, color){
+  if (pts.length < 2) return `<div class="n" style="padding:34px 0;text-align:center">${t("nochart")}</div>`;
+  const W=340,H=150,l=34,r=8,tp=10,b=22;
+  let mn = Math.min(...pts.map(p=>p.v)), mx = Math.max(...pts.map(p=>p.v));
+  if (mx - mn < 1){ mx += .5; mn -= .5; } const pad = (mx-mn)*.1; mn -= pad; mx += pad;
+  const t0 = pts[0].t, t1 = pts[pts.length-1].t;
+  const X = x => l + (x - t0)/(t1 - t0 || 1)*(W-l-r), Y = y => tp + (1 - (y - mn)/(mx - mn))*(H-tp-b);
+  let d = "", prev = null;
+  for (const p of pts){ d += (prev === null || p.t - prev > 35*60000 ? "M" : "L") + X(p.t).toFixed(1) + " " + Y(p.v).toFixed(1); prev = p.t; }
+  const tf = new Intl.DateTimeFormat("en-GB", S.range===1 ? {hour:"2-digit",minute:"2-digit",timeZone:CFG.tz} : {day:"numeric",month:"short",timeZone:CFG.tz});
+  const grid = [mn+pad, (mn+mx)/2, mx-pad].map(v => `<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#E4E0D5"/><text x="${l-4}" y="${Y(v)+3}" text-anchor="end">${v.toFixed(Math.abs(mx-mn)<10?1:0)}</text>`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${grid}<path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="${l}" y="${H-6}">${tf.format(new Date(t0))}</text><text x="${W-r}" y="${H-6}" text-anchor="end">${tf.format(new Date(t1))}</text></svg>`;
+}
+function barChart(items, maxV, color, showVals){
+  const W=340,H=130,l=8,r=8,tp=14,b=20, n = items.length || 1;
+  const mx = maxV ?? Math.max(1, ...items.map(i=>i.v)); const bw = (W-l-r)/n;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">` + items.map((it,i)=>{
+    const h = (it.v/mx)*(H-tp-b), x = l + i*bw + bw*.15, y = H-b-h;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw*.7).toFixed(1)}" height="${Math.max(h,0.5).toFixed(1)}" rx="3" fill="${color}"/>` +
+      (showVals ? `<text x="${(x+bw*.35).toFixed(1)}" y="${(y-3).toFixed(1)}" text-anchor="middle">${it.v.toFixed(1)}</text>` : "") +
+      (it.label ? `<text x="${(x+bw*.35).toFixed(1)}" y="${H-6}" text-anchor="middle">${it.label}</text>` : "");
+  }).join("") + `</svg>`;
+}
+
+
+/* clean CSV built in the browser: named columns with units, date and time split, empty periods removed */
+const COLS = {
+  weather: ["air_temp_C","humidity_pct","pressure_hPa","wind_speed_m_s","wind_dir_deg","rain_total_mm","wind_gust_m_s","rain_last_hour_mm"],
+  soil:    ["soil_moisture_pct","soil_temp_C","soil_EC_uS_cm","soil_pH","N_mg_kg","P_mg_kg","K_mg_kg"]
+};
+function siteFor(day){
+  const d = CFG.deployments.find(x => day >= x.from && (!x.to || day <= x.to));
+  return d ? d.en : "";
+}
+let XLSX_READY = null;
+function loadXLSX(){
+  if (window.XLSX) return Promise.resolve();
+  if (!XLSX_READY) XLSX_READY = new Promise((ok, bad) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = ok; sc.onerror = () => { XLSX_READY = null; bad(); };
+    document.head.appendChild(sc);
+  });
+  return XLSX_READY;
+}
+async function downloadData(e, kind){
+  e.preventDefault();
+  const chName = $("dl-ch").value, ch = CFG[chName], from = $("dl-from").value, to = $("dl-to").value, res = $("dl-res").value, msg = $("dl-msg");
+  msg.style.color = "var(--muted)"; msg.textContent = t("dl_wait");
+  try {
+    const url = `${tsBase}${ch.id}/feeds.json?api_key=${ch.key}&timezone=${encodeURIComponent(CFG.tz)}&start=${from}%2000:00:00&end=${to}%2023:59:59${res?`&average=${res}`:""}`;
+    const [d] = await Promise.all([getJSON(url), kind === "xlsx" ? loadXLSX() : null]);
+    const cols = COLS[chName];
+    const rows = (d.feeds || []).filter(f => cols.some((_,i) => num(f["field"+(i+1)]) !== null));
+    if (!rows.length){ msg.style.color = "var(--amber)"; msg.textContent = t("dl_none"); return; }
+    const head = ["date","time_CAT","site", ...cols];
+    const data = rows.map(f => {
+      const day = f.created_at.slice(0,10);
+      return [day, f.created_at.slice(11,16), siteFor(day), ...cols.map((_,i) => { const v = num(f["field"+(i+1)]); return v === null ? null : Math.round(v*100)/100; })];
+    });
+    const step = res === "" ? "raw" : res === "daily" ? "daily" : res === "60" ? "hourly" : res + "min";
+    const base = `muuni_${chName}_${from}_to_${to}_${step}`;
+    if (kind === "xlsx"){
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet([head, ...data]);
+      ws["!cols"] = head.map(h => ({ wch: h === "site" ? 44 : Math.max(11, h.length + 2) }));
+      ws["!autofilter"] = { ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:data.length, c:head.length-1}}) };
+      ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+      XLSX.utils.book_append_sheet(wb, ws, chName === "weather" ? "Weather data" : "Soil data");
+      const dict = DICT.filter(x => x[0] === chName).map((x,i) => [cols[i], x[2], x[3], x[4]]);
+      const about = XLSX.utils.aoa_to_sheet([
+        ["Muuni Open Weather & Soil Station: " + (chName === "weather" ? "weather" : "soil") + " data"],
+        [],
+        ["Period", `${from} to ${to}`], ["Time step", step], ["Time zone", "Central Africa Time (UTC+2)"], ["Rows", data.length],
+        ["Source", `ThingSpeak channel ${ch.id}`], ["Licence", "CC BY 4.0 (free to use with credit)"],
+        ["Cite as", $("cite").textContent], ["Downloaded", new Date().toISOString().slice(0,16).replace("T"," ") + " UTC"],
+        [], ["Column","Variable","Unit","Sensor"], ...dict
+      ]);
+      about["!cols"] = [{wch:22},{wch:40},{wch:22},{wch:34}];
+      XLSX.utils.book_append_sheet(wb, about, "About this data");
+      XLSX.writeFile(wb, base + ".xlsx");
+    } else {
+      const csv = [head.join(","), ...data.map(r => r.map((v,i) => i === 2 ? `"${v}"` : (v === null ? "" : v)).join(","))].join("\r\n");
+      const blob = new Blob(["﻿" + csv], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = base + ".csv";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }
+    msg.style.color = "var(--green)"; msg.textContent = t("dl_ok").replace("{n}", rows.length);
+  } catch(err){ msg.style.color = "var(--red)"; msg.textContent = t("dl_err"); }
+}
+
+function renderDownload(){
+  const ch = CFG[$("dl-ch").value], from = $("dl-from").value, to = $("dl-to").value, res = $("dl-res").value, tz = encodeURIComponent(CFG.tz);
+  const q = `api_key=${ch.key}&timezone=${tz}&start=${from}%2000:00:00&end=${to}%2023:59:59${res?`&average=${res}`:""}`;
+  $("dl-csv").href = "#";
+  $("dl-json").href = `${tsBase}${ch.id}/feeds.json?${q}`;
+  $("api1").textContent = `${tsBase}${CFG.weather.id}/feeds/last.json?api_key=${CFG.weather.key}`;
+  $("api2").textContent = `${tsBase}${CFG.soil.id}/feeds/last.json?api_key=${CFG.soil.key}`;
+}
+
+function renderHealth(){
+  const w = S.wLast, since = Date.now() - 7*864e5;
+  const buckets = new Set(S.wSeries.filter(e => Date.parse(e.created_at) >= since).map(e => Math.floor(Date.parse(e.created_at)/6e5)));
+  const first = S.wSeries.length ? Math.max(since, Date.parse(S.wSeries[0].created_at)) : null;
+  const expected = first ? Math.max(1, Math.round((Date.now()-first)/6e5)) : null;
+  const cov = expected ? Math.min(100, buckets.size/expected*100) : null;
+  $("health-grid").innerHTML =
+    ic("clock", t("h_last"), w && w.created_at ? agoText(Date.now()-Date.parse(w.created_at)) : "—", "", "") .replace('class="v"','class="v" style="font-size:20px"') +
+    ic("chart", t("h_up"), cov===null?"—":fmt(cov,0), "%", "") +
+    ic("db", t("h_rec"), S.wChan ? Number(S.wChan.last_entry_id).toLocaleString("en") : "—", "", "").replace('class="v"','class="v" style="font-size:22px"') +
+    ic("db", t("h_rec2"), S.sChan ? Number(S.sChan.last_entry_id).toLocaleString("en") : "—", "", "").replace('class="v"','class="v" style="font-size:22px"');
+}
+
+function renderStatic(){
+  $("dict").innerHTML = DICT.map(d => `<tr><td>${d[0]==="weather"?t("ch_w"):t("ch_s")} · ${d[1]}</td><td>${d[2]}</td><td>${d[3]}</td><td>${d[4]}</td></tr>`).join("");
+  $("deps").innerHTML = CFG.deployments.map(d => `<tr><td>${L(d)}</td><td>${d.from}</td><td>${d.to || t("now")}</td></tr>`).join("");
+  $("author").textContent = CFG.author;
+  $("contact-wrap").innerHTML = CFG.contactEmail ? ` · <a href="mailto:${CFG.contactEmail}">${CFG.contactEmail}</a>` : "";
+  const url = location.href.split("#")[0];
+  $("cite").textContent = `${CFG.author} (${new Date().getFullYear()}). Muuni Open Weather & Soil Station data, Malawi [Data set]. ThingSpeak channels ${CFG.weather.id} (weather) and ${CFG.soil.id} (soil). Licence CC BY 4.0. ${url}`;
+}
+
+function setLang(l){ LANG = l; try { localStorage.setItem("muuni-lang", l); } catch(e) {} render(); }
+
+
+/* ---------- init ---------- */
+$("dl-to").value = todayKey(); $("dl-from").value = dayKeyOffset(7);
+["dl-ch","dl-from","dl-to","dl-res"].forEach(id => $(id).addEventListener("change", renderDownload));
+render();
+loadAll();
+setTimeout(spawnBirds, 3000);
+setTimeout(spawnPlane, 18000);
+setInterval(loadAll, 60000);
+</script>
+</body>
+</html>
