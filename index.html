@@ -50,6 +50,7 @@ h2{font-size:22px;margin:0;letter-spacing:-.4px}
 .pill.m{background:var(--green-soft);color:var(--green)}
 .pill.old{background:var(--chip);color:var(--muted)}
 .pill.f{background:var(--blue-soft);color:var(--blue)}
+.pill.o{color:#8A4F00}
 .statuspill{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:12px}
 .statuspill.ok{color:var(--green)}
 .dot{width:9px;height:9px;border-radius:5px;background:#7A817D}.statuspill.ok .dot{background:#22A05A}
@@ -306,12 +307,12 @@ footer{color:var(--muted);font-size:13px;padding:26px 0 44px}
     <p class="sub" data-i18n="adv_sub"></p>
     <div class="card adv" style="padding:4px 18px">
       <div class="item">
-        <div class="ib"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1D5FA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4v3H9zM8 6h6l1 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9z"/><path d="M11 12v5M8.5 14.5h5M17 5c1 1 2 2.2 2 3.2a1.6 1.6 0 1 1-3.2 0c0-1 .8-2.2 1.2-3.2z"/></svg></div>
-        <div><div class="cat"><span data-i18n="spray_h"></span><span class="pill" id="spray-src"></span></div><div class="ttl" id="spray">…</div><ul id="spray-r"></ul></div>
+        <div class="ib"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1E6B45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2.5-5-6-5 0 3 2.5 5 6 5zM5 21h14"/></svg></div>
+        <div><div class="cat"><span data-i18n="plant_h"></span><span class="pill" id="plant-src"></span><span class="pill" id="plant-conf" style="color:var(--muted)"></span></div><div class="ttl" id="plant">…</div><ul id="plant-r"></ul><p class="n" id="plant-note" style="margin-top:6px"></p></div>
       </div>
       <div class="item">
-        <div class="ib"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1E6B45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 15c0-3-2.5-5-6-5 0 3 2.5 5 6 5zM5 21h14"/></svg></div>
-        <div><div class="cat"><span data-i18n="plant_h"></span></div><div class="ttl" id="plant">…</div><ul id="plant-r"></ul></div>
+        <div class="ib"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1D5FA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h4v3H9zM8 6h6l1 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9z"/><path d="M11 12v5M8.5 14.5h5M17 5c1 1 2 2.2 2 3.2a1.6 1.6 0 1 1-3.2 0c0-1 .8-2.2 1.2-3.2z"/></svg></div>
+        <div><div class="cat"><span data-i18n="spray_h"></span><span class="pill" id="spray-src"></span></div><div class="ttl" id="spray">…</div><ul id="spray-r"></ul></div>
       </div>
     </div>
   </section>
@@ -430,6 +431,11 @@ const CFG = {
   lat: -14.33, lon: 35.16,                  // forecast location: Sunbird Nkopola Lodge (approx.) — replace with exact GPS from Google Maps
   exhibitionMode: true,                     // set false when back at a real field site
   seasonStart: "2026-11-01",                // rain season total starts here
+  // Planting advisor (maize). Starting-point thresholds, to be confirmed with extension / DCCMS onset criteria.
+  maize: { seasonStart:"11-01", seasonEnd:"01-31", onsetMm:25, onsetDays:3, onsetRecentDays:10, soilMin:20,
+           dryRunDays:10, lookaheadDays:14, dryDayMm:1, dryDayChance:40, windowChance:60, latePlanting:"12-15" },
+  // Official DCCMS district forecast, copied once per season from metmalawi.gov.mw (leave text empty to hide)
+  dccms: { en:"", ny:"", source:"DCCMS district downscaled seasonal forecast", date:"" },
   deployments: [
     { en: "LUANAR Bunda Campus, Lilongwe", ny: "LUANAR Bunda Campus, Lilongwe", from: "2026-09-29", to: "2026-11-09" },
     { en: "Sunbird Nkopola Lodge, Mangochi (innovation show demo)", ny: "Sunbird Nkopola Lodge, Mangochi (chiwonetsero)", from: "2026-11-10", to: "" }
@@ -442,7 +448,14 @@ const CFG = {
 /* =============================================================== */
 
 const T = {
-en:{fc_less:"Less certain beyond 7 days",outlook:"OUTLOOK",mo_h:"Month ahead",so_h:"Season outlook",
+en:{pl_soil:"Not yet — seed zone still dry",pl_unk:"Can't confirm the rains — station offline",pl_not:"Not yet — rains not established",pl_win:"Planting window opening",pl_good:"Good time to plant maize",pl_risk:"Risky — false start possible",pl_out:"Outside the maize planting season (1 Nov – 31 Jan)",
+pl_conf:"confidence",pl_hi:"High",pl_med:"Medium",pl_lo:"Low",
+pl_onset:"{m} mm measured in 3 days (onset needs about 25 mm)",pl_sofar:"Most rain in any 3 days so far this season: {m} mm (about 25 mm needed)",
+pl_fcwin:"About {m} mm forecast around {d} ({c}% chance)",pl_dry:"A dry spell of about {n} days is forecast from {d}",pl_nodry:"No long dry spell forecast in the next 2 weeks",
+pl_soilok:"Seed zone moist: soil moisture {m}%",pl_soildry:"Seed zone still dry: soil moisture {m}% (about 20% needed)",pl_soilna:"Soil probe reading not valid; check soil moisture by hand",
+pl_off:"Station offline: based on forecast only",pl_outdry:"Outlook: drier than usual around {d}",pl_var:"Consider an early-maturing variety",
+pl_dccms:"Official DCCMS forecast",pl_note:"Guidance, not a guarantee. Thresholds are starting points, to be confirmed with extension guidelines.",
+fc_less:"Less certain beyond 7 days",outlook:"OUTLOOK",mo_h:"Month ahead",so_h:"Season outlook",
 o_note:"Outlook = likely trend for the area compared with 1991–2020 normals, not exact days. Check the official DCCMS seasonal forecast.",
 o_na:"Outlook not available right now.",o_wk:"Week",o_wet:"Wetter than usual",o_dry:"Drier than usual",o_norm:"Rain about normal",o_drys:"Dry, as usual",
 o_warm:"Warmer than usual",o_cool:"Cooler than usual",o_tnorm:"Temp about normal",p_out:"Outlook: drier than usual around",p_out2:"Consider an early-maturing variety, or plant once the rains are well established",
@@ -484,7 +497,14 @@ about_3:"Next: more stations across districts forming an open network, SMS advic
 share_text:"Live open weather and soil data from the Muuni station, Malawi:",
 foot:"Station data: ThingSpeak. Forecast: Open-Meteo.com (CC BY 4.0). Page refreshes every minute."},
 
-ny:{fc_less:"Sizotsimikizika kwambiri patsogolo pa masiku 7",outlook:"ZOYEMBEKEZERA",mo_h:"Mwezi ukubwerawu",so_h:"Zoyembekezera za nyengo",
+ny:{pl_soil:"Osati pano — nthaka yobzalamo idakali youma",pl_unk:"Sitingatsimikizire mvula — siteshoni sikugwira ntchito",pl_not:"Osati pano — mvula sinakhazikike",pl_win:"Nthawi yobzala ikuyandikira",pl_good:"Ndi nthawi yabwino yobzala chimanga",pl_risk:"Pali chiopsezo — mvula ingathe kudukiza",pl_out:"Si nthawi yobzala chimanga (1 Nov – 31 Jan)",
+pl_conf:"kutsimikizika",pl_hi:"Kwambiri",pl_med:"Pakatikati",pl_lo:"Pang'ono",
+pl_onset:"{m} mm yayezedwa m'masiku 3 (pakufunika pafupifupi 25 mm)",pl_sofar:"Mvula yochuluka m'masiku 3 nyengo ino: {m} mm (pakufunika pafupifupi 25 mm)",
+pl_fcwin:"Pafupifupi {m} mm yoloseredwa cha m'ma {d} (mwayi {c}%)",pl_dry:"Chilala cha masiku pafupifupi {n} chikuyembekezeka kuyambira {d}",pl_nodry:"Palibe chilala chachitali choloseredwa m'masabata awiri",
+pl_soilok:"Nthaka yobzalamo ili ndi chinyezi: {m}%",pl_soildry:"Nthaka yobzalamo idakali youma: {m}% (pakufunika pafupifupi 20%)",pl_soilna:"Muyeso wa nthaka siwodalirika; onani chinyezi ndi manja",
+pl_off:"Siteshoni sikugwira ntchito: zachokera ku zolosera zokha",pl_outdry:"Zoyembekezera: kouma kuposa masiku onse cha m'ma {d}",pl_var:"Ganizirani mbewu zocha msanga",
+pl_dccms:"Zolosera za DCCMS",pl_note:"Ichi ndi malangizo, osati chitsimikizo. Miyeso itsimikizidwe ndi alangizi.",
+fc_less:"Sizotsimikizika kwambiri patsogolo pa masiku 7",outlook:"ZOYEMBEKEZERA",mo_h:"Mwezi ukubwerawu",so_h:"Zoyembekezera za nyengo",
 o_note:"Zoyembekezera = chizindikiro cha nyengo m'dera lino poyerekeza ndi 1991–2020, osati masiku enieni. Onaninso zolosera za DCCMS.",
 o_na:"Zoyembekezera sizikupezeka pano.",o_wk:"Sabata",o_wet:"Mvula yambiri kuposa masiku onse",o_dry:"Mvula yochepa kuposa masiku onse",o_norm:"Mvula ngati masiku onse",o_drys:"Kouma, monga masiku onse",
 o_warm:"Kotentha kuposa masiku onse",o_cool:"Kozizira kuposa masiku onse",o_tnorm:"Kutentha ngati masiku onse",p_out:"Zoyembekezera: kouma kuposa masiku onse cha m'ma",p_out2:"Ganizirani mbewu zocha msanga, kapena bzalani mvula ikakhazikika",
@@ -890,6 +910,75 @@ function renderOutlook(){
   S.out.adv = (o.rows||[]).concat(o.mrows||[]);
 }
 
+/* ---------- Planting time advisor (maize) ----------
+   Onset rule: about 25 mm measured within 3 days in the last 10 days, seed zone moist,
+   and no dry spell of 10+ days starting in the next 14 days. Guidance, not a guarantee. */
+function plantingAdvice(){
+  const P = CFG.maize, f = S.fc, today = todayKey(), md = today.slice(5);
+  const inSeason = md >= P.seasonStart || md <= P.seasonEnd;
+  if (!inSeason) return { status:"out", reasons:[], conf:null };
+  const dfm = k => new Intl.DateTimeFormat("en-GB",{ day:"numeric", month:"short", timeZone:"UTC" }).format(new Date(k+"T12:00:00Z"));
+  const y = +today.slice(0,4), seasonStartKey = (md >= P.seasonStart ? y : y-1) + "-" + P.seasonStart;
+  // measured rain + data coverage per day (10-minute buckets)
+  const rd = rainByDay(), cov = {};
+  S.wSeries.forEach(e => { const k = e.created_at.slice(0,10); cov[k] = (cov[k]||0) + 1; });
+  const stationOK = !isStale(S.wLast) && [1,2].every(n => (cov[dayKeyOffset(n)]||0) >= 108);   // ≥18 h of data on each of the last 2 full days
+  let best = 0, onsetDay = null;
+  for (let n = 0; ; n++){ const k = dayKeyOffset(n); if (k < seasonStartKey || n > 120) break;
+    const sum = [0,1,2].reduce((a,i)=>a+(rd[dayKeyOffset(n+i)]||0),0);
+    if (sum > best) best = sum;
+    if (sum >= P.onsetMm && n <= P.onsetRecentDays && onsetDay === null) onsetDay = { k, sum }; }
+  const reasons = [];
+  // forecast: dry run + coming window
+  let dryRun = null, win = null;
+  if (f && f.daily){
+    const pr = f.daily.precipitation_sum, pc = f.daily.precipitation_probability_max, tm = f.daily.time;
+    const dry = tm.map((_,i) => (pr[i]||0) < P.dryDayMm && (pc[i]??0) < P.dryDayChance);
+    for (let i=0; i<Math.min(P.lookaheadDays, tm.length) && !dryRun; i++){ if (!dry[i] || (i>0 && dry[i-1])) continue;
+      let j=i; while (j < tm.length && dry[j]) j++; if (j-i >= P.dryRunDays) dryRun = { from:tm[i], n:j-i }; }
+    for (let i=0; i+2<Math.min(7,tm.length) && !win; i++){ const sum = pr[i]+pr[i+1]+pr[i+2], ch = Math.max(pc[i]??0,pc[i+1]??0,pc[i+2]??0);
+      if (sum >= P.onsetMm && ch >= P.windowChance) win = { from:tm[i], to:tm[i+2], sum, ch }; }
+  }
+  const outDry = (S.out && S.out.adv || []).find(r => r.kind === "week" && r.w <= 4 && r.rain === "dry");
+  const monthsDry = (S.out && S.out.adv || []).some(r => r.kind === "month" && r.rain === "dry");
+  // soil
+  const sm = S.sLast ? num(S.sLast.field1) : null, ec = S.sLast ? num(S.sLast.field3) : null;
+  const soilValid = sm !== null && sm >= 5 && ec !== 0 && !isStale(S.sLast);
+  let status;
+  if (stationOK && onsetDay){
+    reasons.push({ t: t("pl_onset").replace("{m}", fmt(onsetDay.sum)), src:"m" });
+    if (soilValid) reasons.push({ t: t(sm >= P.soilMin ? "pl_soilok" : "pl_soildry").replace("{m}", fmt(sm,0)), src:"m" });
+    else reasons.push({ t: t("pl_soilna"), src:"m" });
+    if (dryRun) reasons.push({ t: t("pl_dry").replace("{n}", dryRun.n).replace("{d}", dfm(dryRun.from)), src:"f" });
+    else if (f) reasons.push({ t: t("pl_nodry"), src:"f" });
+    if (outDry) reasons.push({ t: t("pl_outdry").replace("{d}", outDry.label || dfm(outDry.from)), src:"o" });
+    status = (dryRun || outDry) ? "risk" : (soilValid && sm < P.soilMin) ? "soil" : "good";
+  } else {
+    if (!stationOK) reasons.push({ t: t("pl_off"), src:"f" });
+    else reasons.push({ t: t("pl_sofar").replace("{m}", fmt(best)), src:"m" });
+    if (win){ reasons.push({ t: t("pl_fcwin").replace("{m}", fmt(win.sum,0)).replace("{d}", `${dfm(win.from)}–${dfm(win.to)}`).replace("{c}", win.ch), src:"f" });
+      if (dryRun) reasons.push({ t: t("pl_dry").replace("{n}", dryRun.n).replace("{d}", dfm(dryRun.from)), src:"f" }); }
+    status = win ? "win" : (!stationOK ? "unk" : "not");
+  }
+  if (md > P.latePlanting && md <= "12-31" || md <= P.seasonEnd && md < P.seasonStart || monthsDry) reasons.push({ t: t("pl_var"), src: monthsDry ? "o" : "f" });
+  const conf = !stationOK ? "lo" : (!soilValid || !f) ? "med" : "hi";
+  return { status, reasons, conf, win };
+}
+function renderPlanting(){
+  const a = plantingAdvice(), el = $("plant");
+  const titles = { soil:t("pl_soil"), unk:t("pl_unk"), not:t("pl_not"), win:t("pl_win") + (a.win ? `: ${new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",timeZone:"UTC"}).format(new Date(a.win.from+"T12:00:00Z"))}–${new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",timeZone:"UTC"}).format(new Date(a.win.to+"T12:00:00Z"))}` : ""), good:t("pl_good"), risk:t("pl_risk"), out:t("pl_out") };
+  el.textContent = titles[a.status]; el.className = "ttl " + ({ good:"good", win:"caution", risk:"no", not:"no", soil:"caution", unk:"caution", out:"" }[a.status]);
+  const lab = { m:t("measured"), f:t("forecast"), o:t("outlook") };
+  const main = a.reasons.find(r => r.src === "m") ? "m" : a.reasons.find(r => r.src === "f") ? "f" : "o";
+  const src = $("plant-src"); src.className = "pill " + (a.status === "out" ? "" : main); src.textContent = a.status === "out" ? "" : lab[main];
+  $("plant-conf").textContent = a.conf ? `${t("pl_conf")}: ${t("pl_" + a.conf)}` : "";
+  const rs = a.reasons.map(r => `<li>${r.t} <span class="pill ${r.src}" style="font-size:9.5px">${lab[r.src]}</span></li>`);
+  if (L(CFG.dccms)) rs.push(`<li><b>${t("pl_dccms")}:</b> ${L(CFG.dccms)} <span class="n">(${CFG.dccms.source}${CFG.dccms.date ? ", " + CFG.dccms.date : ""})</span></li>`);
+  if (CFG.exhibitionMode && a.status !== "out") rs.push(`<li>${t("p_ex")}</li>`);
+  $("plant-r").innerHTML = rs.join("");
+  $("plant-note").textContent = a.status === "out" ? "" : t("pl_note");
+}
+
 function renderAdvice(){
   const w = S.wLast, f = S.fc, stale = isStale(w), i = hourIndexNow();
   const r = []; let level = 2;
@@ -913,21 +1002,7 @@ function renderAdvice(){
   const sv = $("spray"); sv.textContent = [t("s_no"),t("s_caution"),t("s_good")][level]; sv.className = "ttl " + ["no","caution","good"][level];
   $("spray-r").innerHTML = r.map(x=>`<li>${x}</li>`).join("");
 
-  const rd = rainByDay(); const rain3 = [0,1,2].reduce((a,n)=>a+(rd[dayKeyOffset(n)]||0),0);
-  const sm = S.sLast ? num(S.sLast.field1) : null; const smOk = sm !== null && sm >= 5 && !isStale(S.sLast);
-  const fc7 = f && f.daily ? f.daily.precipitation_sum.slice(0,7).reduce((a,b)=>a+(b||0),0) : null;
-  const pr = []; let pl;
-  pr.push(`${t("p_rain3")}: ${fmt(rain3)} mm. ${t("p_need")}`);
-  if (smOk) pr.push(`${t("p_soil")}: ${fmt(sm,0)}%`);
-  if (fc7 !== null) pr.push(`${t("p_fc7")}: ${fmt(fc7)} mm`);
-  if (rain3 >= 25 && (fc7 === null || fc7 >= 10) && (!smOk || sm >= 20)) pl = 2; else if (rain3 >= 15) pl = 1; else pl = 0;
-  if (fc7 !== null && fc7 < 10){ pl = Math.min(pl,1); pr.push(t("p_dry")); }
-  const dryWin = (S.out && S.out.adv || []).filter(r => r.rain === "dry");
-  if (dryWin.length){ pl = Math.min(pl,1); pr.push(`${t("p_out")} ${dryWin[0].label}. ${t("p_out2")} (${t("outlook")})`); }
-  if (CFG.exhibitionMode) pr.push(t("p_ex"));
-  pr.push(t("p_rule"));
-  const pv = $("plant"); pv.textContent = [t("p_wait"),t("p_caution"),t("p_good")][pl]; pv.className = "ttl " + ["no","caution","good"][pl];
-  $("plant-r").innerHTML = pr.map(x=>`<li>${x}</li>`).join("");
+  renderPlanting();
 }
 
 function renderRain(){
