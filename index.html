@@ -120,7 +120,7 @@ h2{font-size:22px;margin:0;letter-spacing:-.4px}
   .sun{width:240px;height:240px;right:-75px;top:-50px}.sun .core{width:50px;height:50px;margin:-25px 0 0 -25px}
   .skyrow .k{font-size:11px}.skyrow .v{font-size:19px}
   .wind{grid-template-columns:120px 1fr}#compass{width:120px;height:120px}.wind .big{font-size:44px}
-  .fclist .row{grid-template-columns:1fr 28px 56px 36px 30px;font-size:15px}
+  .fclist .row{grid-template-columns:minmax(0,1fr) 26px 50px 32px 28px;gap:6px;font-size:14px}
 }
 /* ---------- icon cards (like the app) ---------- */
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -150,6 +150,15 @@ h2{font-size:22px;margin:0;letter-spacing:-.4px}
 /* forecast list */
 .fclist .row{display:grid;grid-template-columns:1fr 32px 62px 40px 34px;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);font-size:16px}
 .fclist .row:last-child{border-bottom:0}
+.fclist .row.far{opacity:.62}
+.fcdiv{font-size:12px;font-weight:700;color:var(--muted);padding:10px 0 6px;border-bottom:1px solid var(--line)}
+.pill.o{color:#8A4F00}
+.olist .orow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.olist .orow:last-child{border-bottom:0}
+.olist .when{font-weight:800}.olist .when small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.olist .tag{display:flex;align-items:center;gap:6px;font-weight:600}
+.olist .tag.wet{color:#1D5FA8}.olist .tag.dry{color:#8A4F00}.olist .tag.norm{color:var(--muted)}
+.olist .tag.warm{color:#B4471B}.olist .tag.cool{color:#1D5FA8}
 .fclist .d{font-weight:700}
 .fclist .c{color:var(--muted);font-size:13px;font-weight:500;margin-top:1px}
 .fclist .p{color:var(--blue);font-weight:600;font-size:15px;display:flex;align-items:center;gap:2px}
@@ -194,6 +203,7 @@ th{font-size:12px;color:var(--muted)}
 @media(min-width:640px){.lic{grid-template-columns:repeat(3,1fr)}}
 .lic .name{font-size:18px;font-weight:800;margin:4px 0}
 footer{color:var(--muted);font-size:13px;padding:26px 0 44px}
+@media(max-width:370px){.fclist .row{grid-template-columns:minmax(0,1fr) 26px 50px 32px 28px;gap:6px;font-size:14px}.olist .orow{font-size:13px;gap:6px}}
 </style>
 </head>
 <body>
@@ -283,6 +293,11 @@ footer{color:var(--muted);font-size:13px;padding:26px 0 44px}
       <div class="k2" data-i18n="fc_next24"></div>
       <div id="fc-hours"></div>
     </div>
+    <div class="sh" style="margin-top:22px"><h2 style="font-size:19px" data-i18n="mo_h"></h2><span class="pill o" data-i18n="outlook"></span></div>
+    <div class="card olist" id="out-weeks" style="padding:4px 18px"></div>
+    <div class="sh" style="margin-top:18px"><h2 style="font-size:19px" data-i18n="so_h"></h2><span class="pill o" data-i18n="outlook"></span></div>
+    <div class="card olist" id="out-months" style="padding:4px 18px"></div>
+    <p class="n" style="margin-top:8px" data-i18n="o_note"></p>
   </section>
 
   <!-- ADVICE -->
@@ -427,7 +442,11 @@ const CFG = {
 /* =============================================================== */
 
 const T = {
-en:{b_hw:"Open Hardware",b_sw:"Open Source",b_data:"Open Data",
+en:{fc_less:"Less certain beyond 7 days",outlook:"OUTLOOK",mo_h:"Month ahead",so_h:"Season outlook",
+o_note:"Outlook = likely trend for the area compared with 1991–2020 normals, not exact days. Check the official DCCMS seasonal forecast.",
+o_na:"Outlook not available right now.",o_wk:"Week",o_wet:"Wetter than usual",o_dry:"Drier than usual",o_norm:"Rain about normal",o_drys:"Dry, as usual",
+o_warm:"Warmer than usual",o_cool:"Cooler than usual",o_tnorm:"Temp about normal",p_out:"Outlook: drier than usual around",p_out2:"Consider an early-maturing variety, or plant once the rains are well established",
+b_hw:"Open Hardware",b_sw:"Open Source",b_data:"Open Data",
 tagline:"Live weather and soil data from a low-cost station serving many smallholder farmers. Free to view, download and use.",
 nav_live:"Live",nav_fc:"Forecast",nav_adv:"Farm advice",nav_rain:"Rain",nav_charts:"Charts",nav_dl:"Download",nav_health:"Station health",nav_open:"Licences",nav_about:"About",
 ex_t:"Exhibition mode",ex_b:"The station is a live demonstration at a show. Readings may not represent local field weather.",
@@ -436,7 +455,7 @@ online:"Online",offline:"Offline",last_seen:"last seen",last_reading:"Last readi
 noconn:"Could not reach the data server. Check your internet.",
 air:"Air temp",hum:"Humidity",dew:"Dew point",pres:"Pressure",wind:"Wind",gust_k:"Gust",avg30:"Avg 30 s",rain_today:"Rain today",rain1h:"Last hour",
 soilm:"Soil moisture",soilt:"Soil temp",ph:"Soil pH",ec:"Soil EC",npk:"N · P · K",notsoil:"Not in soil",poor:"Poor contact",check:"Check",unrel:"unreliable",
-fc_h:"Next 7 days",fc_sub:"From the Open-Meteo weather model, not from our station.",fc_next24:"Rain chance, next 24 hours",today:"Today",sky_k:"Sky",cloud:"Cloud",
+fc_h:"Next 16 days",fc_sub:"From the Open-Meteo weather model, not from our station.",fc_next24:"Rain chance, next 24 hours",today:"Today",sky_k:"Sky",cloud:"Cloud",
 uv0:"Low",uv1:"Moderate",uv2:"High",uv3:"Very high",uv4:"Extreme",
 w_clear:"Clear",w_partly:"Partly cloudy",w_cloudy:"Cloudy",w_fog:"Fog",w_drizzle:"Drizzle",w_rain:"Rain",w_storm:"Thunderstorm",
 adv_h:"What to do today",adv_sub:"Simple guidance from measured and forecast data. Always check your field and your extension officer's advice.",
@@ -465,7 +484,11 @@ about_3:"Next: more stations across districts forming an open network, SMS advic
 share_text:"Live open weather and soil data from the Muuni station, Malawi:",
 foot:"Station data: ThingSpeak. Forecast: Open-Meteo.com (CC BY 4.0). Page refreshes every minute."},
 
-ny:{b_hw:"Zipangizo zotsegula",b_sw:"Mapulogalamu otsegula",b_data:"Deta yotsegula",
+ny:{fc_less:"Sizotsimikizika kwambiri patsogolo pa masiku 7",outlook:"ZOYEMBEKEZERA",mo_h:"Mwezi ukubwerawu",so_h:"Zoyembekezera za nyengo",
+o_note:"Zoyembekezera = chizindikiro cha nyengo m'dera lino poyerekeza ndi 1991–2020, osati masiku enieni. Onaninso zolosera za DCCMS.",
+o_na:"Zoyembekezera sizikupezeka pano.",o_wk:"Sabata",o_wet:"Mvula yambiri kuposa masiku onse",o_dry:"Mvula yochepa kuposa masiku onse",o_norm:"Mvula ngati masiku onse",o_drys:"Kouma, monga masiku onse",
+o_warm:"Kotentha kuposa masiku onse",o_cool:"Kozizira kuposa masiku onse",o_tnorm:"Kutentha ngati masiku onse",p_out:"Zoyembekezera: kouma kuposa masiku onse cha m'ma",p_out2:"Ganizirani mbewu zocha msanga, kapena bzalani mvula ikakhazikika",
+b_hw:"Zipangizo zotsegula",b_sw:"Mapulogalamu otsegula",b_data:"Deta yotsegula",
 tagline:"Deta ya nyengo ndi nthaka kuchokera ku siteshoni yotsika mtengo yothandiza alimi ambiri. Yaulere kuona, kutsitsa ndi kugwiritsa ntchito.",
 nav_live:"Pano",nav_fc:"Zolosera",nav_adv:"Malangizo",nav_rain:"Mvula",nav_charts:"Ma graph",nav_dl:"Tsitsani",nav_health:"Thanzi la siteshoni",nav_open:"Malayisensi",nav_about:"Za Muuni",
 ex_t:"Chiwonetsero",ex_b:"Siteshoni ili pa chiwonetsero. Zoyezedwa sizingaimire nyengo ya m'munda.",
@@ -474,7 +497,7 @@ online:"Ikugwira ntchito",offline:"Sikugwira ntchito",last_seen:"yomaliza",last_
 noconn:"Sitinathe kufikira seva ya deta. Onani intaneti yanu.",
 air:"Kutentha",hum:"Chinyezi",dew:"Mame",pres:"Mphamvu ya mpweya",wind:"Mphepo",gust_k:"Mphepo yamphamvu",avg30:"Avereji",rain_today:"Mvula lero",rain1h:"Ola lapitali",
 soilm:"Chinyezi cha nthaka",soilt:"Kutentha kwa nthaka",ph:"pH ya nthaka",ec:"EC ya nthaka",npk:"N · P · K",notsoil:"Sichili m'nthaka",poor:"Sichikhudza bwino nthaka",check:"Onani",unrel:"sizodalirika",
-fc_h:"Masiku 7 akubwerawa",fc_sub:"Kuchokera ku Open-Meteo, osati ku siteshoni yathu.",fc_next24:"Mwayi wa mvula, maola 24",today:"Lero",sky_k:"Thambo",cloud:"Mitambo",
+fc_h:"Masiku 16 akubwerawa",fc_sub:"Kuchokera ku Open-Meteo, osati ku siteshoni yathu.",fc_next24:"Mwayi wa mvula, maola 24",today:"Lero",sky_k:"Thambo",cloud:"Mitambo",
 uv0:"Pang'ono",uv1:"Pakatikati",uv2:"Wamphamvu",uv3:"Wamphamvu kwambiri",uv4:"Woopsa",
 w_clear:"Kuyera",w_partly:"Mitambo pang'ono",w_cloudy:"Mitambo",w_fog:"Nkhungu",w_drizzle:"Mvula yowaza",w_rain:"Mvula",w_storm:"Mabingu",
 adv_h:"Zochita lero",adv_sub:"Malangizo osavuta ochokera ku zoyezedwa ndi zolosera. Nthawi zonse onani munda wanu ndi malangizo a mlangizi.",
@@ -573,7 +596,7 @@ async function loadAll(){
     getJSON(`${tsBase}${s.id}/feeds/last.json?api_key=${s.key}&timezone=${tz}`).then(d=>S.sLast=d),
     getJSON(`${tsBase}${w.id}/feeds.json?api_key=${w.key}&timezone=${tz}&average=10&start=${start}`).then(d=>{S.wSeries=d.feeds||[];S.wChan=d.channel;}),
     getJSON(`${tsBase}${s.id}/feeds.json?api_key=${s.key}&timezone=${tz}&average=10&days=8`).then(d=>{S.sSeries=d.feeds||[];S.sChan=d.channel;}),
-    getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,weather_code,cloud_cover,is_day&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,uv_index_max&timezone=${tz}&wind_speed_unit=ms&forecast_days=7`).then(d=>S.fc=d)
+    getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,weather_code,cloud_cover,is_day&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,uv_index_max&timezone=${tz}&wind_speed_unit=ms&forecast_days=16`).then(d=>S.fc=d)
   ];
   const res = await Promise.allSettled(jobs);
   S.err = res.slice(0,2).every(r => r.status === "rejected");
@@ -604,7 +627,7 @@ function render(){
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   $("lang-en").classList.toggle("on", LANG==="en"); $("lang-ny").classList.toggle("on", LANG==="ny");
   $("place").textContent = L(CFG.place);
-  renderLive(); renderForecast(); renderAdvice(); renderRain(); renderCharts(); renderDownload(); renderHealth(); renderStatic();
+  renderLive(); renderForecast(); renderOutlook(); renderAdvice(); renderRain(); renderCharts(); renderDownload(); renderHealth(); renderStatic();
 }
 
 function setPill(el, stale){ el.className = "pill " + (stale ? "old" : "m"); el.textContent = stale ? t("measured_old") : t("measured"); }
@@ -769,7 +792,8 @@ function renderForecast(){
   const f = S.fc; if (!f || !f.daily){ $("fc-list").innerHTML = `<div class="n" style="padding:16px 0">—</div>`; return; }
   $("fc-list").innerHTML = f.daily.time.map((d,i) => {
     const k = wxKind(f.daily.weather_code[i]); const wd = new Date(d+"T12:00:00Z").getUTCDay();
-    return `<div class="row"><div><div class="d">${i===0?t("today"):(LANG==="ny"?DAYS.ny[wd]:DAYS.en[wd])}</div><div class="c">${t("w_"+k)}</div></div><div>${wxIcon(k)}</div>
+    const dm = i >= 7 ? `<span style="font-weight:500;color:var(--muted)"> ${+d.slice(8,10)}</span>` : "";
+    return (i===7 ? `<div class="fcdiv">${t("fc_less")}</div>` : "") + `<div class="row${i>=7?" far":""}"><div><div class="d">${i===0?t("today"):(LANG==="ny"?DAYS.ny[wd]:DAYS.en[wd])}${dm}</div><div class="c">${t("w_"+k)}</div></div><div>${wxIcon(k)}</div>
       <div class="p"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg>${f.daily.precipitation_probability_max[i] ?? 0}%</div>
       <div class="hi">${Math.round(f.daily.temperature_2m_max[i])}°</div><div class="lo">${Math.round(f.daily.temperature_2m_min[i])}°</div></div>`;
   }).join("");
@@ -783,6 +807,87 @@ function renderForecast(){
   $("sky-n").innerHTML = cur ? `<span style="display:inline-flex;align-items:center;gap:6px">${wxIcon(wxKind(cur.weather_code),22)}${t("cloud")} ${cur.cloud_cover}%</span>` : "";
   const i0 = Math.max(0,i), probs = f.hourly.precipitation_probability.slice(i0, i0+24), hrs = f.hourly.time.slice(i0, i0+24);
   $("fc-hours").innerHTML = barChart(probs.map((v,j)=>({label: j%4===0 ? hrs[j].slice(11,16) : "", v: v ?? 0})), 100, "#1D5FA8");
+}
+
+/* ---------- long-range outlook: weeks 3–6 and months 2–3 ----------
+   Forecast: Open-Meteo seasonal API (ensemble, daily). Normals: ERA5 1991–2020 from Open-Meteo archive.
+   We compare the ensemble-mean total/average for each window with the 30-year normal for the same calendar days.
+   Results are cached (forecast 12 h, normals 30 days). If anything fails, the cards say "not available". */
+const OUT = { rainPct: 25, minNormalMm: 5, tempC: 0.5 };
+function cacheGet(k, maxH){ try { const o = JSON.parse(localStorage.getItem(k)||"null"); if (o && (Date.now()-o.t) < maxH*3600e3) return o.d; } catch(e){} return null; }
+function cacheSet(k, d){ try { localStorage.setItem(k, JSON.stringify({ t:Date.now(), d })); } catch(e){} }
+function memberMean(daily, base){
+  // average all keys that start with base (e.g. precipitation_sum, precipitation_sum_member01 …)
+  const keys = Object.keys(daily).filter(k => k === base || k.startsWith(base + "_member"));
+  if (!keys.length) return null;
+  return daily.time.map((_,i) => { let s=0,n=0; for (const k of keys){ const v = daily[k][i]; if (v !== null && v !== undefined && Number.isFinite(v)){ s+=v; n++; } } return n ? s/n : null; });
+}
+async function getSeasonal(){
+  const key = `muuni-seas-${CFG.lat},${CFG.lon}`;
+  const c = cacheGet(key, 12); if (c) return c;
+  const base = `https://seasonal-api.open-meteo.com/v1/seasonal?latitude=${CFG.lat}&longitude=${CFG.lon}&daily=precipitation_sum,temperature_2m_max,temperature_2m_min&timezone=${encodeURIComponent(CFG.tz)}&forecast_days=100`;
+  for (const url of [base + "&models=ecmwf_seas5", base]){
+    try { const d = await getJSON(url); if (d && d.daily && d.daily.time && d.daily.time.length > 40){ const r = { time:d.daily.time, p:memberMean(d.daily,"precipitation_sum"), tx:memberMean(d.daily,"temperature_2m_max"), tn:memberMean(d.daily,"temperature_2m_min") }; if (r.p){ cacheSet(key, r); return r; } } } catch(e){}
+  }
+  return null;
+}
+async function getNormals(){
+  const key = `muuni-norm-${CFG.lat},${CFG.lon}`;
+  const c = cacheGet(key, 24*30); if (c) return c;
+  try {
+    const d = await getJSON(`https://archive-api.open-meteo.com/v1/archive?latitude=${CFG.lat}&longitude=${CFG.lon}&start_date=1991-01-01&end_date=2020-12-31&daily=precipitation_sum,temperature_2m_max,temperature_2m_min&timezone=${encodeURIComponent(CFG.tz)}`);
+    // per calendar day (MM-DD): mean precipitation and mean temperature across 30 years
+    const acc = {};
+    d.daily.time.forEach((t0,i) => { const md = t0.slice(5); const a = acc[md] || (acc[md] = { p:0, t:0, n:0, nt:0 });
+      const p = d.daily.precipitation_sum[i], tx = d.daily.temperature_2m_max[i], tn = d.daily.temperature_2m_min[i];
+      if (p !== null){ a.p += p; a.n++; } if (tx !== null && tn !== null){ a.t += (tx+tn)/2; a.nt++; } });
+    const out = {}; for (const md in acc){ const a = acc[md]; out[md] = [a.n ? a.p/a.n : null, a.nt ? a.t/a.nt : null]; }
+    cacheSet(key, out); return out;
+  } catch(e){ return null; }
+}
+function windowStats(fc, norm, from, to){
+  let fp=0, np=0, ft=0, nt=0, n=0;
+  fc.time.forEach((d,i) => { if (d < from || d > to) return; const nm = norm[d.slice(5)] || norm["02-28"];
+    if (fc.p[i] === null || !nm || nm[0] === null) return;
+    fp += fc.p[i]; np += nm[0]; if (fc.tx && fc.tn && fc.tx[i] !== null && fc.tn[i] !== null && nm[1] !== null){ ft += (fc.tx[i]+fc.tn[i])/2; nt += nm[1]; } n++; });
+  if (!n) return null;
+  const rain = np < OUT.minNormalMm && fp < OUT.minNormalMm ? "drys" : fp >= np*(1+OUT.rainPct/100) ? "wet" : fp <= np*(1-OUT.rainPct/100) ? "dry" : "norm";
+  const dT = (ft - nt)/n;
+  const temp = dT >= OUT.tempC ? "warm" : dT <= -OUT.tempC ? "cool" : "tnorm";
+  return { rain, temp, fp, np, days:n };
+}
+const addDays = (k, n) => dkFmt.format(new Date(Date.parse(k+"T12:00:00Z") + n*864e5));
+async function loadOutlook(){
+  try {
+    const [fc, norm] = await Promise.all([getSeasonal(), getNormals()]);
+    if (!fc || !norm){ S.out = { err:true }; render(); return; }
+    const today = todayKey(), rows = [], mrows = [];
+    for (let w=3; w<=6; w++){ const from = addDays(today,(w-1)*7), to = addDays(today,w*7-1); const st = windowStats(fc,norm,from,to); if (st && st.days >= 5) rows.push({ kind:"week", w, from, to, ...st }); }
+    const now = new Date(Date.parse(today+"T12:00:00Z"));
+    for (let m=1; m<=2; m++){
+      const y = now.getUTCFullYear(), mo = now.getUTCMonth()+m, first = new Date(Date.UTC(y,mo,1)), last = new Date(Date.UTC(y,mo+1,0));
+      const from = first.toISOString().slice(0,10), to = last.toISOString().slice(0,10);
+      const st = windowStats(fc,norm,from,to); if (st && st.days >= 20) mrows.push({ kind:"month", from, to, ...st });
+    }
+    S.out = { rows, mrows, err: !rows.length && !mrows.length };
+  } catch(e){ S.out = { err:true }; }
+  render();
+}
+function renderOutlook(){
+  const o = S.out;
+  const na = `<div class="n" style="padding:14px 0">${o ? t("o_na") : t("loading")}</div>`;
+  const dfm = new Intl.DateTimeFormat(LANG==="ny"?"en-GB":"en-GB",{ day:"numeric", month:"short", timeZone:"UTC" });
+  const mfm = new Intl.DateTimeFormat("en-GB",{ month:"long", year:"numeric", timeZone:"UTC" });
+  const rainIc = r => r==="wet" ? wxIcon("rain",20) : r==="dry" || r==="drys" ? wxIcon("clear",20) : wxIcon("cloudy",20);
+  const row = (when, sub, r) => `<div class="orow"><div class="when">${when}<small>${sub}</small></div>
+      <div class="tag ${r.rain==="wet"?"wet":r.rain==="dry"?"dry":"norm"}">${rainIc(r.rain)}${t("o_"+r.rain)}</div>
+      <div class="tag ${r.temp==="warm"?"warm":r.temp==="cool"?"cool":"norm"}">🌡 ${t("o_"+r.temp)}</div></div>`;
+  if (!o || o.err){ $("out-weeks").innerHTML = na; $("out-months").innerHTML = na; return; }
+  (o.rows||[]).forEach(r => r.label = `${dfm.format(new Date(r.from+"T12:00:00Z"))} – ${dfm.format(new Date(r.to+"T12:00:00Z"))}`);
+  (o.mrows||[]).forEach(r => r.label = mfm.format(new Date(r.from+"T12:00:00Z")));
+  $("out-weeks").innerHTML = (o.rows||[]).length ? o.rows.map(r => row(`${t("o_wk")} ${r.w}`, r.label, r)).join("") : na;
+  $("out-months").innerHTML = (o.mrows||[]).length ? o.mrows.map(r => row(r.label, "", r)).join("") : na;
+  S.out.adv = (o.rows||[]).concat(o.mrows||[]);
 }
 
 function renderAdvice(){
@@ -810,13 +915,15 @@ function renderAdvice(){
 
   const rd = rainByDay(); const rain3 = [0,1,2].reduce((a,n)=>a+(rd[dayKeyOffset(n)]||0),0);
   const sm = S.sLast ? num(S.sLast.field1) : null; const smOk = sm !== null && sm >= 5 && !isStale(S.sLast);
-  const fc7 = f && f.daily ? f.daily.precipitation_sum.reduce((a,b)=>a+(b||0),0) : null;
+  const fc7 = f && f.daily ? f.daily.precipitation_sum.slice(0,7).reduce((a,b)=>a+(b||0),0) : null;
   const pr = []; let pl;
   pr.push(`${t("p_rain3")}: ${fmt(rain3)} mm. ${t("p_need")}`);
   if (smOk) pr.push(`${t("p_soil")}: ${fmt(sm,0)}%`);
   if (fc7 !== null) pr.push(`${t("p_fc7")}: ${fmt(fc7)} mm`);
   if (rain3 >= 25 && (fc7 === null || fc7 >= 10) && (!smOk || sm >= 20)) pl = 2; else if (rain3 >= 15) pl = 1; else pl = 0;
   if (fc7 !== null && fc7 < 10){ pl = Math.min(pl,1); pr.push(t("p_dry")); }
+  const dryWin = (S.out && S.out.adv || []).filter(r => r.rain === "dry");
+  if (dryWin.length){ pl = Math.min(pl,1); pr.push(`${t("p_out")} ${dryWin[0].label}. ${t("p_out2")} (${t("outlook")})`); }
   if (CFG.exhibitionMode) pr.push(t("p_ex"));
   pr.push(t("p_rule"));
   const pv = $("plant"); pv.textContent = [t("p_wait"),t("p_caution"),t("p_good")][pl]; pv.className = "ttl " + ["no","caution","good"][pl];
@@ -981,6 +1088,8 @@ $("dl-to").value = todayKey(); $("dl-from").value = dayKeyOffset(7);
 ["dl-ch","dl-from","dl-to","dl-res"].forEach(id => $(id).addEventListener("change", renderDownload));
 render();
 loadAll();
+loadOutlook();
+setInterval(loadOutlook, 6*3600e3);
 setTimeout(spawnBirds, 3000);
 setTimeout(spawnPlane, 18000);
 setInterval(loadAll, 60000);
